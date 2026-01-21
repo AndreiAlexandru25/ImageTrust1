@@ -1,0 +1,140 @@
+# Pre-commit hooks configuration for ImageTrust
+# Install: pip install pre-commit && pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  # ==========================================================================
+  # General hooks
+  # ==========================================================================
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^(.*\.md|.*\.txt)$
+      - id: end-of-file-fixer
+        exclude: ^(.*\.md)$
+      - id: check-yaml
+        args: [--unsafe]  # Allow custom tags
+      - id: check-json
+      - id: check-toml
+      - id: check-added-large-files
+        args: [--maxkb=1000]
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: detect-private-key
+      - id: debug-statements
+
+  # ==========================================================================
+  # Python code formatting
+  # ==========================================================================
+  - repo: https://github.com/psf/black
+    rev: 24.1.1
+    hooks:
+      - id: black
+        language_version: python3
+        args: [--line-length=100]
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: [--profile=black, --line-length=100]
+
+  # ==========================================================================
+  # Python linting
+  # ==========================================================================
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.14
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+
+  # ==========================================================================
+  # Type checking (optional, can be slow)
+  # ==========================================================================
+  # - repo: https://github.com/pre-commit/mirrors-mypy
+  #   rev: v1.8.0
+  #   hooks:
+  #     - id: mypy
+  #       additional_dependencies:
+  #         - types-PyYAML
+  #         - types-requests
+  #       args: [--ignore-missing-imports]
+  #       exclude: ^tests/
+
+  # ==========================================================================
+  # Security scanning
+  # ==========================================================================
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.7
+    hooks:
+      - id: bandit
+        args: [-ll, --skip=B101]  # Skip assert_used warning
+        exclude: ^tests/
+
+  # ==========================================================================
+  # Documentation
+  # ==========================================================================
+  - repo: https://github.com/pycqa/pydocstyle
+    rev: 6.3.0
+    hooks:
+      - id: pydocstyle
+        args: [--convention=google, --add-ignore=D100,D104,D105,D107]
+        exclude: ^(tests/|scripts/|examples/)
+        # D100: Missing docstring in public module
+        # D104: Missing docstring in public package
+        # D105: Missing docstring in magic method
+        # D107: Missing docstring in __init__
+
+  # ==========================================================================
+  # Jupyter notebooks (if used)
+  # ==========================================================================
+  - repo: https://github.com/nbQA-dev/nbQA
+    rev: 1.7.1
+    hooks:
+      - id: nbqa-black
+      - id: nbqa-isort
+        args: [--profile=black]
+      - id: nbqa-ruff
+
+  # ==========================================================================
+  # Commit message formatting
+  # ==========================================================================
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v3.13.0
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]
+
+# ==========================================================================
+# Configuration
+# ==========================================================================
+default_language_version:
+  python: python3
+
+exclude: |
+  (?x)^(
+    \.git/|
+    \.hg/|
+    \.mypy_cache/|
+    \.tox/|
+    \.venv/|
+    venv/|
+    _build/|
+    buck-out/|
+    build/|
+    dist/|
+    __pycache__/|
+    \.eggs/|
+    .*\.egg-info/
+  )$
+
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit hooks
+
+  autofix_prs: true
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false

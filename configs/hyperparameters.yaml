@@ -1,0 +1,361 @@
+# =============================================================================
+# ImageTrust Hyperparameters Configuration
+# =============================================================================
+# Central configuration file for all model hyperparameters used in thesis.
+# These values are used for reproducibility and thesis appendix documentation.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Global Settings
+# -----------------------------------------------------------------------------
+global:
+  seed: 42
+  device: "auto"  # auto, cuda, cpu
+  precision: "fp32"  # fp32, fp16, bf16
+  deterministic: true
+  num_workers: 4
+
+# -----------------------------------------------------------------------------
+# Data Preprocessing
+# -----------------------------------------------------------------------------
+data:
+  image_size: 224
+  normalization:
+    mean: [0.485, 0.456, 0.406]  # ImageNet statistics
+    std: [0.229, 0.224, 0.225]
+
+  augmentation:
+    train:
+      random_horizontal_flip: 0.5
+      random_rotation: 15  # degrees
+      color_jitter:
+        brightness: 0.2
+        contrast: 0.2
+        saturation: 0.1
+        hue: 0.05
+      random_resized_crop:
+        scale: [0.8, 1.0]
+        ratio: [0.9, 1.1]
+
+    validation:
+      center_crop: true
+      resize: 256
+      crop_size: 224
+
+# -----------------------------------------------------------------------------
+# Dataset Splits
+# -----------------------------------------------------------------------------
+splits:
+  train_ratio: 0.70
+  val_ratio: 0.15
+  test_ratio: 0.15
+  stratified: true
+
+# -----------------------------------------------------------------------------
+# Baseline 1: Classical (Hand-crafted Features + LogReg)
+# -----------------------------------------------------------------------------
+baseline_classical:
+  name: "Classical (LogReg)"
+  type: "classical"
+
+  features:
+    # Histogram features
+    color_histogram:
+      bins: 64
+      channels: ["r", "g", "b", "h", "s", "v"]
+
+    # Texture features (GLCM)
+    glcm:
+      distances: [1, 2, 5]
+      angles: [0, 45, 90, 135]  # degrees
+      properties: ["contrast", "dissimilarity", "homogeneity", "energy", "correlation"]
+
+    # Edge features
+    edge_histogram:
+      bins: 16
+      method: "canny"
+
+    # Frequency features
+    dct_features:
+      block_size: 8
+      n_coefficients: 64
+
+    # Quality features
+    jpeg_quality_estimation: true
+    noise_estimation: true
+
+  classifier:
+    type: "logistic_regression"
+    C: 1.0
+    solver: "lbfgs"
+    max_iter: 1000
+    class_weight: "balanced"
+
+# -----------------------------------------------------------------------------
+# Baseline 2: CNN (Fine-tuned ResNet/EfficientNet)
+# -----------------------------------------------------------------------------
+baseline_cnn:
+  name: "CNN (ResNet-50)"
+  type: "cnn"
+
+  backbone:
+    architecture: "resnet50"  # resnet50, efficientnet_b0, convnext_base
+    pretrained: true
+    pretrained_source: "imagenet"
+    freeze_layers: 0  # Number of layers to freeze (0 = train all)
+
+  classifier:
+    hidden_dims: [512, 256]
+    dropout: 0.5
+    activation: "relu"
+
+  training:
+    epochs: 10
+    batch_size: 32
+
+    optimizer:
+      type: "adamw"
+      learning_rate: 0.0001
+      weight_decay: 0.0001
+      betas: [0.9, 0.999]
+
+    scheduler:
+      type: "cosine"
+      warmup_epochs: 1
+      min_lr: 0.000001
+
+    early_stopping:
+      patience: 5
+      min_delta: 0.001
+      monitor: "val_loss"
+
+  regularization:
+    label_smoothing: 0.1
+    mixup_alpha: 0.0  # 0 = disabled
+    cutmix_alpha: 0.0  # 0 = disabled
+
+# Alternative CNN configurations
+baseline_cnn_efficientnet:
+  name: "CNN (EfficientNet-B0)"
+  type: "cnn"
+  backbone:
+    architecture: "efficientnet_b0"
+    pretrained: true
+  training:
+    epochs: 10
+    batch_size: 32
+    optimizer:
+      learning_rate: 0.0001
+
+baseline_cnn_convnext:
+  name: "CNN (ConvNeXt-Base)"
+  type: "cnn"
+  backbone:
+    architecture: "convnext_base"
+    pretrained: true
+  training:
+    epochs: 10
+    batch_size: 16
+    optimizer:
+      learning_rate: 0.00005
+
+# -----------------------------------------------------------------------------
+# Baseline 3: Vision Transformer (ViT/CLIP)
+# -----------------------------------------------------------------------------
+baseline_vit:
+  name: "ViT-B/16"
+  type: "vit"
+
+  backbone:
+    architecture: "vit_base_patch16_224"  # or "clip_vit_base_patch16"
+    pretrained: true
+    pretrained_source: "imagenet21k"  # imagenet, imagenet21k, clip
+    patch_size: 16
+    embed_dim: 768
+    num_heads: 12
+    depth: 12
+
+  classifier:
+    type: "linear"  # linear, mlp
+    hidden_dims: []  # Empty for linear probe
+    dropout: 0.1
+
+  training:
+    epochs: 10
+    batch_size: 16
+
+    optimizer:
+      type: "adamw"
+      learning_rate: 0.00001  # Lower for ViT
+      weight_decay: 0.01
+      betas: [0.9, 0.999]
+
+    scheduler:
+      type: "cosine"
+      warmup_epochs: 2
+      min_lr: 0.0000001
+
+    gradient_clipping: 1.0
+    gradient_accumulation: 2
+
+# Alternative ViT configurations
+baseline_vit_clip:
+  name: "CLIP ViT-B/16"
+  type: "vit"
+  backbone:
+    architecture: "clip_vit_base_patch16"
+    pretrained: true
+    pretrained_source: "openai"
+  training:
+    learning_rate: 0.00001
+
+# -----------------------------------------------------------------------------
+# ImageTrust (Ensemble of Pretrained Models)
+# -----------------------------------------------------------------------------
+imagetrust:
+  name: "ImageTrust (Ours)"
+  type: "ensemble"
+
+  # HuggingFace models used (no fine-tuning)
+  models:
+    - name: "umm-maybe/AI-image-detector"
+      weight: 0.25
+
+    - name: "Organika/sdxl-detector"
+      weight: 0.25
+
+    - name: "aiornot/aiornot-detector-v2"
+      weight: 0.25
+
+    - name: "nyuad/ai-image-detector-2025"
+      weight: 0.25
+
+  ensemble_strategy: "weighted_average"  # average, weighted_average, voting, max, stacking
+
+  calibration:
+    enabled: true
+    method: "temperature"  # temperature, platt, isotonic, beta
+
+  signal_analysis:
+    enabled: true
+    components:
+      - frequency_analysis
+      - noise_estimation
+      - texture_analysis
+
+# -----------------------------------------------------------------------------
+# Calibration Methods
+# -----------------------------------------------------------------------------
+calibration:
+  # Temperature Scaling
+  temperature:
+    init_temperature: 1.5
+    optimizer: "lbfgs"
+    max_iter: 100
+
+  # Platt Scaling (Logistic Regression)
+  platt:
+    solver: "lbfgs"
+    max_iter: 1000
+
+  # Isotonic Regression
+  isotonic:
+    out_of_bounds: "clip"  # clip, nan, raise
+
+  # Beta Calibration
+  beta:
+    parameters: 3  # 2 or 3
+
+# -----------------------------------------------------------------------------
+# Evaluation Settings
+# -----------------------------------------------------------------------------
+evaluation:
+  # Main metrics
+  metrics:
+    - accuracy
+    - balanced_accuracy
+    - precision
+    - recall
+    - f1_score
+    - roc_auc
+    - average_precision
+    - ece  # Expected Calibration Error
+    - brier_score
+
+  # Calibration evaluation
+  calibration:
+    n_bins: 10
+    strategy: "uniform"  # uniform, quantile
+
+  # Cross-generator evaluation
+  cross_generator:
+    generators:
+      - real
+      - midjourney
+      - dalle3
+      - stable_diffusion_xl
+      - firefly
+      - ideogram
+
+  # Degradation robustness
+  degradation:
+    jpeg_quality: [95, 85, 70, 50]
+    blur_sigma: [0.0, 0.5, 1.0, 2.0]
+    resize_factor: [1.0, 0.75, 0.5]
+    noise_sigma: [0.0, 0.01, 0.03]
+
+  # Bootstrap confidence intervals
+  bootstrap:
+    n_iterations: 1000
+    confidence: 0.95
+    seed: 42
+
+# -----------------------------------------------------------------------------
+# Ablation Study Settings
+# -----------------------------------------------------------------------------
+ablation:
+  # Component removal experiments
+  components:
+    - full_model
+    - without_model_1  # Remove umm-maybe
+    - without_model_2  # Remove Organika
+    - without_model_3  # Remove aiornot
+    - without_model_4  # Remove nyuad
+    - without_signal_analysis
+    - without_calibration
+
+  # Ensemble strategy comparison
+  ensemble_strategies:
+    - average
+    - weighted_average
+    - voting
+    - max
+    - stacking
+
+  # Calibration method comparison
+  calibration_methods:
+    - none
+    - temperature
+    - platt
+    - isotonic
+
+# -----------------------------------------------------------------------------
+# Hardware / Performance Settings
+# -----------------------------------------------------------------------------
+hardware:
+  # GPU settings
+  cuda:
+    enabled: true
+    device_ids: [0]  # For multi-GPU
+    memory_fraction: 0.9
+
+  # Memory optimization
+  memory:
+    gradient_checkpointing: false
+    pin_memory: true
+    prefetch_factor: 2
+
+  # Mixed precision
+  amp:
+    enabled: false
+    dtype: "float16"  # float16, bfloat16

@@ -1,0 +1,159 @@
+# ImageTrust Baselines Configuration
+# ==================================
+# This file defines baseline models for comparison in the thesis.
+# All baselines share a common interface: predict_proba(image) -> float
+
+# Reproducibility settings (shared across all baselines)
+reproducibility:
+  seed: 42
+  deterministic: true
+  num_workers: 0  # For reproducibility on Windows
+
+# Dataset split configuration
+splits:
+  train_ratio: 0.70
+  val_ratio: 0.15
+  test_ratio: 0.15
+  stratified: true
+  split_file: "data/splits/default_split.json"  # If exists, use this
+
+# B1: Classical Baseline (Feature-based)
+classical:
+  enabled: true
+  name: "Classical (LogReg)"
+
+  # Feature extraction
+  features:
+    # Frequency domain
+    use_dct: true
+    dct_coeffs: 64  # Number of DCT coefficients
+
+    # Noise analysis
+    use_noise: true
+    noise_sigma_bins: 10
+
+    # JPEG artifacts
+    use_jpeg_artifacts: true
+
+    # Color statistics
+    use_color_stats: true
+    color_bins: 32
+
+    # Texture (LBP)
+    use_lbp: true
+    lbp_radius: 1
+    lbp_points: 8
+
+    # Edge statistics
+    use_edges: true
+
+  # Classifier
+  classifier: "logistic_regression"  # or "xgboost"
+
+  logistic_regression:
+    C: 1.0
+    max_iter: 1000
+    solver: "lbfgs"
+    class_weight: "balanced"
+
+  xgboost:
+    n_estimators: 100
+    max_depth: 6
+    learning_rate: 0.1
+    subsample: 0.8
+    colsample_bytree: 0.8
+    use_gpu: false
+
+# B2: CNN Baseline (Single backbone)
+cnn:
+  enabled: true
+  name: "CNN (ResNet-50)"
+
+  backbone: "resnet50"  # or "efficientnet_b0"
+  pretrained: true  # ImageNet weights
+  freeze_backbone: false  # Fine-tune all layers
+
+  # Training
+  input_size: 224
+  batch_size: 32
+  epochs: 10  # Lightweight for reproducibility
+  learning_rate: 0.0001
+  weight_decay: 0.0001
+  optimizer: "adamw"
+  scheduler: "cosine"
+
+  # Augmentation (minimal for fair comparison)
+  augmentation:
+    horizontal_flip: true
+    random_crop: false
+    color_jitter: false
+
+# B3: Modern Baseline (ViT or CLIP)
+modern:
+  enabled: true
+  name: "ViT-B/16"
+
+  architecture: "vit"  # or "clip"
+
+  vit:
+    model_name: "vit_base_patch16_224"
+    pretrained: true
+    freeze_backbone: false
+
+  clip:
+    model_name: "ViT-B/32"
+    use_text_encoder: false  # Linear probe on image features only
+    freeze_backbone: true  # CLIP is already powerful
+
+  # Training (same structure as CNN)
+  input_size: 224
+  batch_size: 16  # Smaller due to memory
+  epochs: 10
+  learning_rate: 0.00001  # Lower for ViT
+  weight_decay: 0.01
+  optimizer: "adamw"
+  scheduler: "cosine"
+
+# Evaluation settings
+evaluation:
+  # Metrics to compute
+  metrics:
+    - "accuracy"
+    - "balanced_accuracy"
+    - "f1_score"
+    - "precision"
+    - "recall"
+    - "roc_auc"
+    - "ece"  # Expected Calibration Error
+
+  # Cross-generator evaluation
+  cross_generator:
+    enabled: true
+    leave_one_out: true
+    generators:
+      - "real"
+      - "midjourney"
+      - "dalle3"
+      - "stable_diffusion"
+      - "firefly"
+
+  # Degradation evaluation
+  degradation:
+    enabled: true
+    jpeg_qualities: [95, 85, 70, 50]
+    resize_factors: [1.0, 0.75, 0.5]
+    blur_radii: [0, 0.5, 1.0, 2.0]
+    noise_sigmas: [0, 0.01, 0.03]
+
+# Calibration (applied post-hoc to all baselines)
+calibration:
+  enabled: true
+  method: "temperature"  # temperature, platt, isotonic
+  val_split: 0.2  # Use 20% of val set for calibration fitting
+
+# Output settings
+output:
+  save_predictions: true
+  save_features: true  # Cache B1 features
+  results_dir: "outputs/baselines"
+  paper_dir: "outputs/paper"
