@@ -17,9 +17,10 @@ Developed as a Master's thesis project at the intersection of computer vision, i
 **No Python installation required.**
 
 1. Go to [Releases](https://github.com/AndreiAlexandru25/ImageTrust/releases)
-2. Download `ImageTrust-v1.0.1-win64.zip`
-3. Extract the zip file
-4. Run `ImageTrust.exe`
+2. Download **both** files: `ImageTrust-v1.0.1-win64.7z.001` and `ImageTrust-v1.0.1-win64.7z.002`
+3. Place both files in the same folder
+4. Extract using [7-Zip](https://www.7-zip.org/) (right-click `.001` file -> 7-Zip -> Extract Here)
+5. Run `ImageTrust.exe`
 
 On first launch, the application downloads pre-trained HuggingFace models (~2 GB). Subsequent launches are instant.
 
