@@ -24,6 +24,9 @@ detector:
   pretrained: true
   checkpoint: null  # Path to custom checkpoint
   
+  # Custom Kaggle-trained model
+  kaggle_model_path: null  # Path to best_model.pth from Kaggle training
+
   # Device settings
   device: null  # null for auto-detect, or "cuda", "cpu", "mps"
   

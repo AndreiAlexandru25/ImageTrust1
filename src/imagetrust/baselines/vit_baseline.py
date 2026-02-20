@@ -575,7 +575,7 @@ class ViTBaseline(BaselineDetector):
         """Load model checkpoint."""
         import torch
 
-        state = torch.load(path, map_location="cpu")
+        state = torch.load(path, map_location="cpu", weights_only=False)
 
         self.architecture = state["architecture"]
         self.model_name = state["model_name"]

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "imagetrust"
-version = "0.1.0"
+version = "1.0.1"
 description = "A Forensic Application for Identifying AI-Generated and Digitally Manipulated Images"
 readme = "README.md"
 license = {text = "MIT"}
@@ -79,7 +79,7 @@ docs = [
     "mkdocstrings[python]>=0.24.0",
 ]
 explainability = [
-    "pytorch-grad-cam>=1.4.8",
+    "grad-cam>=1.4.8",
     "captum>=0.6.0",
     "shap>=0.43.0",
 ]

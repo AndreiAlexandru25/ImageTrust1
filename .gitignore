@@ -62,6 +62,7 @@ site/
 
 # Data and models (large files)
 data/
+datasets/
 models/
 checkpoints/
 *.pth
@@ -76,9 +77,9 @@ outputs/
 reports/
 results/
 tmp/
-*.pdf
-*.html
-*.exe
+
+# Claude Code
+.claude/
 
 # Logs
 *.log

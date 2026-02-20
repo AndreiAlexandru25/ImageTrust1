@@ -64,6 +64,9 @@ class Settings(BaseSettings):
     detector_checkpoint: Optional[Path] = None
     detector_device: Optional[str] = None  # "cuda", "cpu", "mps", or None for auto
 
+    # Custom trained model (from Kaggle)
+    kaggle_model_path: Optional[Path] = None  # Path to best_model.pth
+
     # Confidence bounds
     min_confidence: float = Field(default=0.80, ge=0.5, le=1.0)
     max_confidence: float = Field(default=0.95, ge=0.5, le=1.0)

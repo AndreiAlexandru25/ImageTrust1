@@ -17,6 +17,7 @@ from PIL import Image
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def sample_image_bytes():
     """Create a sample image as bytes."""
@@ -32,6 +33,7 @@ def test_client():
     """Create a test client for the API."""
     try:
         from fastapi.testclient import TestClient
+
         from imagetrust.api.main import app
 
         return TestClient(app)
@@ -42,6 +44,7 @@ def test_client():
 # =============================================================================
 # Health & Info Endpoint Tests
 # =============================================================================
+
 
 class TestHealthEndpoints:
     """Tests for health check endpoints."""
@@ -76,6 +79,7 @@ class TestHealthEndpoints:
 # =============================================================================
 # Analysis Endpoint Tests
 # =============================================================================
+
 
 class TestAnalysisEndpoints:
     """Tests for image analysis endpoints."""
@@ -152,6 +156,7 @@ class TestAnalysisEndpoints:
 # URL Analysis Tests
 # =============================================================================
 
+
 class TestURLAnalysis:
     """Tests for URL-based analysis."""
 
@@ -180,6 +185,7 @@ class TestURLAnalysis:
 # =============================================================================
 # Error Handling Tests
 # =============================================================================
+
 
 class TestErrorHandling:
     """Tests for API error handling."""
@@ -231,6 +237,7 @@ class TestErrorHandling:
 # Response Format Tests
 # =============================================================================
 
+
 class TestResponseFormat:
     """Tests for API response formatting."""
 
@@ -265,6 +272,7 @@ class TestResponseFormat:
 # CORS Tests
 # =============================================================================
 
+
 class TestCORS:
     """Tests for CORS handling."""
 
@@ -298,6 +306,7 @@ class TestCORS:
 # Rate Limiting Tests
 # =============================================================================
 
+
 class TestRateLimiting:
     """Tests for rate limiting (if enabled)."""
 
@@ -318,6 +327,7 @@ class TestRateLimiting:
 # =============================================================================
 # OpenAPI Documentation Tests
 # =============================================================================
+
 
 class TestOpenAPIDocumentation:
     """Tests for API documentation endpoints."""

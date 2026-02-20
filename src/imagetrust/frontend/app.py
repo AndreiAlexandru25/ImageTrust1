@@ -50,6 +50,13 @@ try:
 except ImportError:
     C2PA_AVAILABLE = False
 
+try:
+    from imagetrust.forensics import ForensicsEngine
+    from imagetrust.forensics.base import PluginCategory
+    FORENSICS_AVAILABLE = True
+except ImportError:
+    FORENSICS_AVAILABLE = False
+
 
 def extract_metadata(image_bytes: bytes) -> dict:
     """Extract EXIF metadata from image bytes."""
@@ -441,6 +448,14 @@ def main():
         st.subheader("📋 Metadata")
         use_metadata = st.checkbox("EXIF Analysis", value=True)
         use_provenance = st.checkbox("Provenance Score", value=True)
+
+        st.subheader("🔍 Forensics Engine")
+        forensics_include_ai = st.checkbox(
+            "Include AI Detection in Forensics",
+            value=True,
+            help="Enable HuggingFace model-based AI detection in full forensics analysis"
+        )
+        st.session_state["forensics_include_ai"] = forensics_include_ai
         
         analysis_settings = {
             "use_ml": use_ml,
@@ -906,8 +921,9 @@ def main():
             if show_details:
                 st.markdown("---")
                 st.markdown("## 🔬 Advanced Forensic Analysis")
-                
-                tab1, tab2, tab3, tab4 = st.tabs([
+
+                tab1, tab2, tab3, tab4, tab5 = st.tabs([
+                    "🔍 Full Forensics",
                     "🎨 AI Generator ID",
                     "🔥 Grad-CAM Heatmap",
                     "🧩 Copy-Move Detection",
@@ -916,9 +932,180 @@ def main():
                 
                 image = st.session_state.get("image")
                 image_bytes = st.session_state.get("image_bytes")
-                
-                # Tab 1: AI Generator Identification
+
+                # Tab 1: Full Forensics Analysis
                 with tab1:
+                    st.markdown("### 🔍 Comprehensive Forensics Analysis")
+                    st.markdown("*Multi-signal forensics: pixel analysis, metadata, source detection, AI cues*")
+
+                    if FORENSICS_AVAILABLE and image is not None:
+                        run_forensics = st.button("Run Full Forensics", key="run_forensics_btn", type="primary")
+
+                        if run_forensics or "forensics_report" in st.session_state:
+                            if run_forensics:
+                                with st.spinner("Running comprehensive forensics analysis..."):
+                                    try:
+                                        engine = ForensicsEngine()
+                                        categories = [
+                                            PluginCategory.PIXEL,
+                                            PluginCategory.METADATA,
+                                            PluginCategory.SOURCE,
+                                        ]
+                                        # Optionally add AI detection
+                                        if st.session_state.get("forensics_include_ai", True):
+                                            categories.append(PluginCategory.AI_DETECTION)
+
+                                        report = engine.analyze(image, categories=categories)
+                                        st.session_state["forensics_report"] = report
+                                    except Exception as e:
+                                        st.error(f"Forensics analysis failed: {e}")
+                                        st.session_state["forensics_report"] = None
+
+                            report = st.session_state.get("forensics_report")
+                            if report:
+                                # Verdict Summary
+                                verdict = report.verdict
+                                verdict_color = {
+                                    "camera_original_likely": "green",
+                                    "ai_generated_suspected": "red",
+                                    "edited_likely": "orange",
+                                    "screenshot_likely": "blue",
+                                    "social_media_likely": "cyan",
+                                    "unknown": "gray",
+                                }.get(verdict.primary_verdict.value, "gray")
+
+                                st.markdown(f"""
+                                <div style="padding: 1rem; border-radius: 10px; background: linear-gradient(135deg, rgba(100,126,234,0.2), rgba(118,75,162,0.2)); border-left: 4px solid {verdict_color};">
+                                    <h3 style="margin:0;">Primary Verdict: {verdict.primary_verdict.value.replace('_', ' ').title()}</h3>
+                                    <p>Confidence: <strong>{verdict.primary_confidence.name}</strong> | Authenticity Score: <strong>{verdict.authenticity_score:.2f}</strong></p>
+                                </div>
+                                """, unsafe_allow_html=True)
+
+                                if verdict.inconclusive:
+                                    st.warning("Analysis is INCONCLUSIVE - insufficient or contradictory evidence")
+
+                                # Top Evidence
+                                if verdict.top_evidence:
+                                    st.markdown("#### Top Evidence")
+                                    for ev in verdict.top_evidence[:5]:
+                                        st.markdown(f"- {ev}")
+
+                                # Contradictions
+                                if verdict.contradictions:
+                                    st.markdown("#### Contradictions")
+                                    for c in verdict.contradictions:
+                                        st.warning(c)
+
+                                # Label Breakdown
+                                st.markdown("#### Label Probabilities")
+                                label_cols = st.columns(4)
+                                for i, ls in enumerate(sorted(verdict.labels, key=lambda x: x.probability, reverse=True)):
+                                    if ls.probability > 0.05:
+                                        with label_cols[i % 4]:
+                                            st.metric(
+                                                ls.label.value.replace("_", " ").title(),
+                                                f"{ls.probability:.0%}",
+                                                help=f"Confidence: {ls.confidence.name}"
+                                            )
+
+                                # Detailed Results Tabs
+                                st.markdown("---")
+                                st.markdown("#### Detector Results")
+
+                                pixel_results = [r for r in report.results if r.category == PluginCategory.PIXEL]
+                                meta_results = [r for r in report.results if r.category == PluginCategory.METADATA]
+                                source_results = [r for r in report.results if r.category == PluginCategory.SOURCE]
+                                ai_results = [r for r in report.results if r.category == PluginCategory.AI_DETECTION]
+
+                                sub_tab1, sub_tab2, sub_tab3, sub_tab4 = st.tabs([
+                                    f"Pixel ({len(pixel_results)})",
+                                    f"Metadata ({len(meta_results)})",
+                                    f"Source ({len(source_results)})",
+                                    f"AI Cues ({len(ai_results)})",
+                                ])
+
+                                with sub_tab1:
+                                    for r in pixel_results:
+                                        status_icon = "DETECTED" if r.detected else "not detected"
+                                        status_color = "red" if r.detected else "green"
+                                        with st.expander(f"**{r.plugin_name}** - [{status_icon}] Score: {r.score:.2f}"):
+                                            st.markdown(f"**Explanation:** {r.explanation}")
+                                            st.progress(r.score)
+                                            if r.limitations:
+                                                st.caption("Limitations: " + "; ".join(r.limitations[:2]))
+                                            if r.details:
+                                                with st.expander("Technical Details"):
+                                                    st.json({k: v for k, v in r.details.items() if not isinstance(v, (bytes, np.ndarray))})
+
+                                with sub_tab2:
+                                    for r in meta_results:
+                                        status_icon = "DETECTED" if r.detected else "not detected"
+                                        with st.expander(f"**{r.plugin_name}** - [{status_icon}] Score: {r.score:.2f}"):
+                                            st.markdown(f"**Explanation:** {r.explanation}")
+                                            st.progress(r.score)
+                                            if r.details:
+                                                important = r.details.get("important_tags", {})
+                                                if important:
+                                                    st.markdown("**Important Tags:**")
+                                                    for k, v in list(important.items())[:10]:
+                                                        st.text(f"  {k}: {v}")
+
+                                with sub_tab3:
+                                    for r in source_results:
+                                        status_icon = "DETECTED" if r.detected else "not detected"
+                                        with st.expander(f"**{r.plugin_name}** - [{status_icon}] Score: {r.score:.2f}"):
+                                            st.markdown(f"**Explanation:** {r.explanation}")
+                                            st.progress(r.score)
+                                            if r.details.get("platform_scores"):
+                                                st.markdown("**Platform Scores:**")
+                                                for plat, score in r.details["platform_scores"].items():
+                                                    st.text(f"  {plat}: {score:.2f}")
+
+                                with sub_tab4:
+                                    if ai_results:
+                                        for r in ai_results:
+                                            status_icon = "AI DETECTED" if r.detected else "not detected"
+                                            status_color = "red" if r.detected else "green"
+                                            with st.expander(f"**{r.plugin_name}** - [{status_icon}] Score: {r.score:.2f}"):
+                                                st.markdown(f"**Explanation:** {r.explanation}")
+                                                st.progress(r.score)
+                                                if r.details.get("model_results"):
+                                                    st.markdown("**Model Results:**")
+                                                    for mr in r.details["model_results"]:
+                                                        st.text(f"  {mr['name']}: {mr['ai_probability']:.1%}")
+                                    else:
+                                        st.info("AI detection was skipped. Enable it in the sidebar settings.")
+
+                                # Export Options
+                                st.markdown("---")
+                                st.markdown("#### Export Report")
+                                col_exp1, col_exp2 = st.columns(2)
+                                with col_exp1:
+                                    json_str = report.to_json()
+                                    st.download_button(
+                                        "Download JSON Report",
+                                        json_str,
+                                        file_name=f"forensics_{report.run_id}.json",
+                                        mime="application/json",
+                                    )
+                                with col_exp2:
+                                    md_str = report.to_markdown()
+                                    st.download_button(
+                                        "Download Markdown Report",
+                                        md_str,
+                                        file_name=f"forensics_{report.run_id}.md",
+                                        mime="text/markdown",
+                                    )
+
+                                st.caption(f"Analysis completed in {report.total_processing_time_ms:.0f}ms | Run ID: {report.run_id}")
+                    else:
+                        if not FORENSICS_AVAILABLE:
+                            st.warning("Forensics module not available. Install with: pip install imagetrust")
+                        else:
+                            st.info("Upload an image to run forensics analysis.")
+
+                # Tab 2: AI Generator Identification
+                with tab2:
                     st.markdown("### 🎨 AI Generator Fingerprinting")
                     st.markdown("*Identifies which AI model generated the image (if AI-generated)*")
                     
@@ -981,8 +1168,8 @@ def main():
                     else:
                         st.warning("Generator identification requires scipy. Install with: pip install scipy")
                 
-                # Tab 2: Grad-CAM Heatmap
-                with tab2:
+                # Tab 3: Grad-CAM Heatmap
+                with tab3:
                     st.markdown("### 🔥 Grad-CAM Visualization")
                     st.markdown("*Shows which regions of the image triggered AI detection*")
                     
@@ -1037,8 +1224,8 @@ def main():
                     else:
                         st.warning("Grad-CAM requires additional dependencies. Using fallback visualization.")
                 
-                # Tab 3: Copy-Move Detection
-                with tab3:
+                # Tab 4: Copy-Move Detection
+                with tab4:
                     st.markdown("### 🧩 Copy-Move Forgery Detection")
                     st.markdown("*Detects if regions have been copied and pasted within the image*")
                     
@@ -1117,8 +1304,8 @@ def main():
                     else:
                         st.warning("Copy-Move detection requires scipy. Install with: pip install scipy")
                 
-                # Tab 4: C2PA Credentials
-                with tab4:
+                # Tab 5: C2PA Credentials
+                with tab5:
                     st.markdown("### 🔐 C2PA Content Credentials")
                     st.markdown("*Verifies industry-standard provenance metadata (Adobe, Microsoft, etc.)*")
                     

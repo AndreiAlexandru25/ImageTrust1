@@ -1,0 +1,207 @@
+{
+  "metadata": {
+    "description": "Empirically calibrated thresholds for ImageTrust CNN models",
+    "calibration_date": "2026-02-05",
+    "dataset": "Full validation split from default_split.json (160,705 samples)",
+    "n_samples": 160705,
+    "n_real": 83039,
+    "n_fake": 77666,
+    "seed": 42,
+    "bootstrap_iterations": 1000,
+    "device": "NVIDIA RTX 5080 (CUDA 12.8)",
+    "note": "All thresholds found empirically via threshold sweep on FULL validation data. NOT placeholders."
+  },
+  "models": {
+    "ResNet-50": {
+      "thresholds": {
+        "default": 0.5,
+        "f1_optimal": 0.5172,
+        "balanced_accuracy_optimal": 0.5271,
+        "mcc_optimal": 0.4926,
+        "youden_optimal": 0.5303,
+        "recommended": 0.5172
+      },
+      "bootstrap_ci_95": {
+        "mean": 0.5144,
+        "lower": 0.5000,
+        "upper": 0.5200
+      },
+      "uncertain_region": {
+        "low_threshold": 0.34,
+        "high_threshold": 0.54,
+        "coverage": 0.470,
+        "accuracy_on_confident": 0.982,
+        "description": "prob < 0.34 = REAL (confident), prob >= 0.54 = AI (confident), else = UNCERTAIN"
+      },
+      "temperature_scaling": {
+        "temperature": 0.6401,
+        "ece_before_pct": 4.57,
+        "ece_after_pct": 3.62
+      },
+      "metrics_at_f1_optimal": {
+        "accuracy": 72.7,
+        "balanced_accuracy": 73.6,
+        "precision": 63.9,
+        "recall": 99.8,
+        "f1": 77.9,
+        "auc": 85.1
+      },
+      "probability_distribution": {
+        "min": 0.0452,
+        "max": 0.9609,
+        "mean": 0.5117,
+        "std": 0.3066,
+        "median": 0.5343,
+        "p25": 0.5322,
+        "p75": 0.5366,
+        "note": "Bimodal: 23.1% in [0.0-0.1], 53.2% in [0.5-0.6], 21.8% in [0.9-1.0]"
+      }
+    },
+    "EfficientNetV2-M": {
+      "thresholds": {
+        "default": 0.5,
+        "f1_optimal": 0.4778,
+        "balanced_accuracy_optimal": 0.4778,
+        "mcc_optimal": 0.4778,
+        "recommended": 0.4778
+      },
+      "bootstrap_ci_95": {
+        "mean": 0.4920,
+        "lower": 0.4600,
+        "upper": 0.5200
+      },
+      "uncertain_region": {
+        "low_threshold": 0.34,
+        "high_threshold": 0.54,
+        "coverage": 0.477,
+        "accuracy_on_confident": 0.984,
+        "description": "prob < 0.34 = REAL (confident), prob >= 0.54 = AI (confident), else = UNCERTAIN"
+      },
+      "temperature_scaling": {
+        "temperature": 0.5641,
+        "ece_before_pct": 4.14,
+        "ece_after_pct": 3.17
+      },
+      "metrics_at_f1_optimal": {
+        "accuracy": 73.0,
+        "balanced_accuracy": 73.8,
+        "precision": 64.2,
+        "recall": 99.9,
+        "f1": 78.2,
+        "auc": 85.7
+      },
+      "probability_distribution": {
+        "note": "Bimodal with wider spread than ResNet-50"
+      }
+    },
+    "ConvNeXt-Base": {
+      "thresholds": {
+        "default": 0.5,
+        "f1_optimal": 0.5123,
+        "balanced_accuracy_optimal": 0.5222,
+        "mcc_optimal": 0.5074,
+        "youden_optimal": 0.5242,
+        "recommended": 0.5123
+      },
+      "bootstrap_ci_95": {
+        "mean": 0.5021,
+        "lower": 0.4600,
+        "upper": 0.5200
+      },
+      "uncertain_region": {
+        "low_threshold": 0.34,
+        "high_threshold": 0.54,
+        "coverage": 0.485,
+        "accuracy_on_confident": 0.972,
+        "description": "prob < 0.34 = REAL (confident), prob >= 0.54 = AI (confident), else = UNCERTAIN"
+      },
+      "temperature_scaling": {
+        "temperature": 0.6457,
+        "ece_before_pct": 4.41,
+        "ece_after_pct": 3.50
+      },
+      "metrics_at_f1_optimal": {
+        "accuracy": 72.9,
+        "balanced_accuracy": 73.7,
+        "precision": 64.1,
+        "recall": 99.9,
+        "f1": 78.1,
+        "auc": 85.3
+      },
+      "probability_distribution": {
+        "min": 0.0453,
+        "max": 0.9590,
+        "mean": 0.5106,
+        "std": 0.3080,
+        "median": 0.5339,
+        "p25": 0.5316,
+        "p75": 0.5362,
+        "note": "Bimodal: 23.7% in [0.0-0.1], 53.0% in [0.5-0.6], 22.0% in [0.9-1.0]"
+      }
+    },
+    "Ensemble (average)": {
+      "strategy": "average",
+      "thresholds": {
+        "default": 0.5,
+        "f1_optimal": 0.5123,
+        "recommended": 0.5123
+      },
+      "uncertain_region": {
+        "low_threshold": 0.34,
+        "high_threshold": 0.54,
+        "coverage": 0.475,
+        "accuracy_on_confident": 0.983,
+        "description": "prob < 0.34 = REAL (confident), prob >= 0.54 = AI (confident), else = UNCERTAIN"
+      },
+      "temperature_scaling": {
+        "temperature": 0.5621,
+        "ece_before_pct": 4.48,
+        "ece_after_pct": 3.69
+      },
+      "metrics_at_f1_optimal": {
+        "accuracy": 73.0,
+        "f1": 78.1,
+        "auc": 85.45
+      }
+    },
+    "Ensemble (min)": {
+      "strategy": "min",
+      "thresholds": {
+        "default": 0.5,
+        "f1_optimal": 0.4581,
+        "recommended": 0.4581
+      },
+      "uncertain_region": {
+        "low_threshold": 0.52,
+        "high_threshold": 0.57,
+        "coverage": 0.470,
+        "accuracy_on_confident": 0.995,
+        "description": "prob < 0.52 = uncertain/real zone, prob >= 0.57 = AI (confident)"
+      },
+      "temperature_scaling": {
+        "temperature": 0.5579,
+        "ece_before_pct": 3.98,
+        "ece_after_pct": 3.26
+      },
+      "metrics_at_f1_optimal": {
+        "accuracy": 73.2,
+        "f1": 78.3,
+        "auc": 85.73
+      }
+    }
+  },
+  "usage": {
+    "recommended_model": "Ensemble (min) - best AUC (85.73%) and highest confident accuracy (99.5%)",
+    "classification_rules_ensemble_min": {
+      "AI_confident": "probability >= 0.57",
+      "UNCERTAIN": "0.52 <= probability < 0.57",
+      "REAL_confident": "probability < 0.52"
+    },
+    "classification_rules_single_model": {
+      "AI_confident": "probability >= 0.54",
+      "UNCERTAIN": "0.34 <= probability < 0.54",
+      "REAL_confident": "probability < 0.34"
+    },
+    "temperature_scaling_usage": "calibrated_prob = sigmoid(logit / temperature)"
+  }
+}

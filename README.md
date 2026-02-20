@@ -1,478 +1,242 @@
-# 🔍 ImageTrust
+# ImageTrust
 
-**A Forensic Application for Identifying AI-Generated and Digitally Manipulated Images**
+**AI-Generated Image Detection with Calibrated Uncertainty and Multi-Backbone Fusion**
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.1+-red.svg)](https://pytorch.org/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.x-red.svg)](https://pytorch.org/)
+
+ImageTrust is a forensic application for detecting AI-generated and digitally manipulated images. It uses a multi-backbone embedding fusion approach (ResNet-50 + EfficientNet-B0 + ViT-B/16) with XGBoost and MLP meta-classifiers, temperature-scaled calibration, and conformal prediction for uncertainty quantification.
+
+Developed as a Master's thesis project at the intersection of computer vision, image forensics, and machine learning.
 
 ---
 
-## 📋 Overview
+## Download & Run (Windows)
 
-ImageTrust is a comprehensive forensic application designed to detect AI-generated and manipulated images with high accuracy and reliability. Built for research and practical applications, it provides:
+**No Python installation required.**
 
-- **🎯 AI Detection**: Multi-model ensemble for robust AI image detection
-- **📊 Calibrated Confidence**: Reliable probability scores with temperature scaling
-- **🔬 Explainability**: Grad-CAM heatmaps and patch-level analysis
-- **📋 Metadata Analysis**: EXIF, XMP, and C2PA provenance validation
-- **📄 Forensic Reports**: Professional PDF/HTML/JSON reports
-- **🌐 REST API**: FastAPI backend for integration
-- **💻 Web UI**: Modern Streamlit interface
-- **🖥️ Desktop App**: Native Windows application with drag-and-drop
-- **📦 Windows .exe**: Standalone executable (no Python required)
-- **🧪 Baseline Framework**: Classical, CNN, and ViT baselines with calibration
-- **📈 Reproducibility**: Complete experiment reproduction pipeline
+1. Go to [Releases](https://github.com/AndreiAlexandru25/ImageTrust/releases)
+2. Download `ImageTrust-v1.0.1-win64.zip`
+3. Extract the zip file
+4. Run `ImageTrust.exe`
+
+On first launch, the application downloads pre-trained HuggingFace models (~2 GB). Subsequent launches are instant.
+
+### System Requirements
+
+- Windows 10/11 (64-bit)
+- 8 GB RAM minimum (16 GB recommended)
+- NVIDIA GPU with CUDA support (optional, improves speed)
+- Internet connection for first launch (model download)
 
 ---
 
-## 🚀 Quick Start
+## Results
+
+Evaluated on 604,589 images across 4 compression variants (original, WhatsApp, Instagram, screenshot). Three random seeds, bootstrap 95% confidence intervals.
+
+### Main Comparison
+
+| Method | Accuracy | F1 | ROC-AUC | ECE |
+|--------|----------|-----|---------|-----|
+| LogReg (ResNet-50 emb.) | 0.870 | 0.839 | 0.939 [0.938, 0.940] | -- |
+| XGBoost (ResNet-50 emb.) | 0.885 | 0.854 | 0.956 [0.955, 0.957] | 0.022 |
+| XGBoost (EfficientNet-B0 emb.) | 0.881 | 0.848 | 0.953 [0.952, 0.954] | 0.024 |
+| XGBoost (ViT-B/16 emb.) | 0.880 | 0.846 | 0.950 [0.949, 0.951] | 0.027 |
+| **XGBoost (3-backbone fusion)** | **0.886** | **0.858** | **0.959** | **0.016** |
+| **MLP (3-backbone fusion)** | **0.890** | **0.865** | **0.963** | 0.036 |
+
+Multi-backbone fusion improves AUC by +0.3--1.3% over single-backbone baselines. MLP achieves the highest AUC (0.963) while XGBoost has the best calibration (ECE=0.016).
+
+### Degradation Robustness
+
+| Condition | XGBoost AUC | MLP AUC | Drop |
+|-----------|-------------|---------|------|
+| Original (clean) | 0.961 | 0.964 | -- |
+| WhatsApp compression | 0.958 | 0.961 | -0.003 |
+| Instagram pipeline | 0.961 | 0.964 | -0.000 |
+| Screenshot capture | 0.960 | 0.963 | -0.001 |
+
+The system is robust to social media compression with <0.3% AUC drop.
+
+### Cross-Generator Evaluation (33 Generators)
+
+Evaluated on 33 unseen generators from the GenImage artifacts dataset (5,000 images per generator). The model was NOT trained on these generators -- this tests zero-shot generalization.
+
+**Detected well (>50% TPR):** StarGAN (69%), Denoising DiffGAN (66%), Palette (62%), StyleGAN3 (42%)
+
+**Not detected (<5% TPR):** CycleGAN, DDPM, ProGAN, BigGAN, GLIDE, Latent Diffusion, VQ-Diffusion
+
+This is expected behavior -- the meta-classifier learns embedding-space patterns from its training generators and does not generalize to all architectures. Cross-generator generalization remains an open research problem.
+
+### Statistical Significance
+
+McNemar test: chi2=20.76, p<0.001 (MLP significantly better on predictions).
+DeLong test: dAUC=-0.003, p=1.0 (not significant on AUC -- both models are competitive).
+
+### Efficiency
+
+| Component | Time |
+|-----------|------|
+| ResNet-50 embedding | 4.3 ms/image |
+| EfficientNet-B0 embedding | 5.5 ms/image |
+| ViT-B/16 embedding | 4.2 ms/image |
+| **Total pipeline** | **14.3 ms/image** |
+
+Measured on NVIDIA RTX 5080 (16 GB VRAM), batch size 256, mixed precision.
+
+---
+
+## Architecture
+
+```
+Phase 1: Embedding Extraction (GPU)
+  Image -> [ResNet-50 (2048-d)] + [EfficientNet-B0 (1280-d)] + [ViT-B/16 (768-d)] + [NIQE (1-d)]
+  -> Concatenated 4097-dimensional feature vector per image
+  -> Applied to 4 variants: original, WhatsApp, Instagram, screenshot
+
+Phase 2: Meta-Classifier Training
+  4097-d features -> XGBoost (GPU-accelerated, 3 seeds)
+  4097-d features -> MLP (4097->1024->512->256->1, SWA, mixup, label smoothing)
+  -> Temperature scaling calibration
+  -> Conformal prediction (LAC/APS/RAPS)
+
+Phase 3: Publication Pipeline
+  -> Single-backbone baselines (honest comparison)
+  -> Degradation robustness evaluation
+  -> Cross-source evaluation
+  -> Statistical significance tests
+  -> 8 publication figures + 7 LaTeX tables
+```
+
+---
+
+## Project Structure
+
+```
+imagetrust/
+├── src/imagetrust/              # Main source code
+│   ├── core/                    # Config, types, exceptions
+│   ├── detection/               # ML detection (multi_detector, calibration, models)
+│   ├── evaluation/              # Metrics, ablation, cross-generator, degradation
+│   ├── explainability/          # Grad-CAM, patch analysis, frequency
+│   ├── forensics/               # Forensics engine
+│   ├── frontend/                # PySide6 desktop app, Streamlit web UI
+│   ├── metadata/                # EXIF, XMP, C2PA provenance
+│   ├── reporting/               # PDF/JSON/HTML forensic reports
+│   ├── baselines/               # Classical, CNN, ViT baselines
+│   └── cli.py                   # Click-based CLI
+├── scripts/orchestrator/        # Training & evaluation pipelines
+│   ├── run_phase1_pipeline.py   # Phase 1: embedding extraction
+│   ├── run_phase2_training.py   # Phase 2: meta-classifier training
+│   ├── run_phase3_publication.py # Phase 3: figures, tables, paper
+│   └── run_cross_generator_eval.py # Cross-generator evaluation
+├── configs/                     # YAML configuration
+├── paper/                       # LaTeX paper template
+├── tests/                       # Unit + integration tests
+├── ImageTrust.spec              # PyInstaller spec for .exe build
+└── requirements.txt             # Python dependencies
+```
+
+---
+
+## Development Setup
+
+### Prerequisites
+
+- Python 3.10--3.12
+- NVIDIA GPU with CUDA 12.x (for training; CPU works for inference)
+- 16 GB RAM minimum for training
 
 ### Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/imagetrust.git
+git clone https://github.com/AndreiAlexandru25/ImageTrust.git
 cd imagetrust
 
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# or: venv\Scripts\activate  # Windows
+python -m venv .venv
+.venv\Scripts\activate        # Windows
+# source .venv/bin/activate   # Linux/Mac
 
-# Install dependencies
-pip install -e .
+pip install -e ".[dev]"
 ```
 
-### Basic Usage
+### CLI Commands
 
 ```bash
 # Analyze a single image
 imagetrust analyze photo.jpg
 
-# Start the web UI
+# Start Streamlit web UI
 imagetrust ui
 
-# Start the API server
-imagetrust serve --port 8000
-
-# Launch desktop application
+# Launch desktop app (PySide6)
 imagetrust desktop
-```
-
-### Python API
-
-```python
-from imagetrust.detection import AIDetector
-
-# Create detector
-detector = AIDetector(model="ensemble")
-
-# Detect AI-generated content
-result = detector.detect("image.jpg")
-print(f"AI Probability: {result['ai_probability']:.1%}")
-print(f"Verdict: {result['verdict']}")
-
-# Full analysis with explainability
-from PIL import Image
-image = Image.open("image.jpg")
-analysis = detector.analyze(image, include_explainability=True)
-print(analysis.get_summary())
-```
-
----
-
-## 🏗️ Architecture
-
-```
-imagetrust/
-├── src/imagetrust/
-│   ├── api/            # FastAPI REST API
-│   ├── baselines/      # Baseline detectors (classical, CNN, ViT)
-│   │   ├── classical.py
-│   │   ├── cnn.py
-│   │   ├── vit.py
-│   │   ├── calibration.py    # Probability calibration
-│   │   └── uncertainty.py    # Selective prediction
-│   ├── cli.py          # Command-line interface
-│   ├── core/           # Configuration, types, exceptions
-│   ├── data/           # Dataset management
-│   │   └── splits.py   # Train/val/test splits
-│   ├── desktop/        # PySide6 desktop application
-│   │   └── app.py
-│   ├── detection/      # AI detection models
-│   │   ├── models/     # CNN, ViT, Ensemble
-│   │   └── detector.py
-│   ├── evaluation/     # Benchmarking & testing
-│   │   ├── ablation.py       # Ablation study
-│   │   ├── cross_generator.py
-│   │   └── degradation.py
-│   ├── explainability/ # Grad-CAM, patches, frequency
-│   ├── frontend/       # Streamlit web UI
-│   ├── metadata/       # EXIF, XMP, C2PA
-│   ├── reporting/      # PDF, HTML, JSON reports
-│   └── utils/          # Helpers, logging, image utils
-├── assets/             # Icons and branding
-├── configs/            # Configuration files
-├── data/               # Datasets and splits
-├── docker/             # Containerization
-├── docs/               # Documentation
-├── outputs/            # Experiment outputs
-├── scripts/            # Evaluation and build scripts
-└── tests/              # Unit tests
-```
-
----
-
-## 📊 Performance Comparison
-
-The dissertation requires a comparison against existing methods. A full template and instructions are provided here:
-
-- `docs/performance_comparison.md`
-
-It includes baseline methods, metrics, and how to reproduce results using:
-```
-python scripts/run_evaluation.py --dataset data/eval
-```
-
----
-
-## 🎯 Key Features
-
-### 1. Multi-Model Detection
-
-- **CNN Backbones**: ConvNeXt, EfficientNet, ResNet
-- **Vision Transformers**: ViT, Swin, DeiT
-- **Ensemble**: Weighted combination for robustness
-
-### 2. Calibrated Probabilities
-
-- Temperature scaling for reliable confidence
-- Bounded to realistic range (80-95%)
-- Expected Calibration Error (ECE) metrics
-
-### 3. Explainability
-
-- **Grad-CAM/Grad-CAM++**: Attention heatmaps
-- **Patch Analysis**: Region-level scores
-- **Frequency Analysis**: FFT-based patterns
-
-### 4. Metadata & Provenance
-
-- **EXIF**: Camera, timestamp, GPS
-- **XMP**: Edit history, creator tools
-- **C2PA**: Cryptographic provenance
-
-### 5. Robustness Testing
-
-- Cross-generator evaluation
-- Degradation robustness (JPEG, blur, noise)
-- MLE-STAR inspired ablation study
-
-### 6. Baseline Framework
-
-Compare against reproducible baselines:
-
-```python
-from imagetrust.baselines import get_baseline, list_baselines
-
-# Available: classical, cnn, vit, imagetrust
-baseline = get_baseline("cnn", backbone="efficientnet_b0")
-baseline.fit(train_images, train_labels, val_images, val_labels)
-
-# Predict with calibration
-result = baseline.predict_proba(image)
-print(f"AI probability: {result.ai_probability:.2%}")
-```
-
-### 7. Probability Calibration
-
-Ensure reliable confidence estimates:
-
-```python
-from imagetrust.baselines import calibrate_baseline
-
-calibrator, result = calibrate_baseline(
-    baseline, val_images, val_labels,
-    method="temperature"  # or "platt", "isotonic"
-)
-
-print(f"ECE before: {result.ece_before:.4f}")
-print(f"ECE after: {result.ece_after:.4f}")
-```
-
-### 8. Desktop Application
-
-Native Qt application for Windows:
-
-- Drag-and-drop image analysis
-- Dark theme modern interface
-- Real-time detection results
-- Export results to JSON
-- No terminal required
-
-```bash
-# Run from command line
-imagetrust desktop
-
-# Build standalone .exe
-python scripts/build_desktop.py
-```
-
----
-
-## 📊 Evaluation
-
-### Cross-Generator Testing
-
-Tested against multiple AI generators:
-- Midjourney
-- DALL-E 3
-- Stable Diffusion XL
-- Adobe Firefly
-- Ideogram
-
-### Degradation Robustness
-
-Tested under various conditions:
-- JPEG compression (50-95 quality)
-- Gaussian blur (σ = 0.5-2.0)
-- Resize (25%-75%)
-- Gaussian noise (1%-5%)
-
----
-
-## 🖥️ CLI Commands
-
-```bash
-# Analyze single image
-imagetrust analyze photo.jpg --output result.json
-
-# Batch analysis
-imagetrust batch ./images/ --output results.json
-
-# Evaluate on dataset
-imagetrust evaluate --dataset ./testset/ --model ensemble
 
 # Start API server
-imagetrust serve --port 8000 --reload
-
-# Launch web UI
-imagetrust ui --port 8501
-
-# Launch desktop application
-imagetrust desktop
-
-# System info
-imagetrust info
+imagetrust serve --port 8000
 ```
 
----
-
-## 🔌 API Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/` | GET | API info |
-| `/health` | GET | Health check |
-| `/analyze` | POST | Analyze image |
-| `/analyze/batch` | POST | Batch analysis |
-| `/model` | GET | Model info |
-
-### Example Request
+### Running Tests
 
 ```bash
-curl -X POST "http://localhost:8000/analyze" \
-  -H "accept: application/json" \
-  -H "Content-Type: multipart/form-data" \
-  -F "file=@photo.jpg"
+pytest tests/ -v
+pytest tests/unit/ -v --fast     # Skip slow tests
+pytest --cov=imagetrust          # With coverage
 ```
 
----
-
-## 📚 Documentation
-
-- [API Reference](docs/API.md) - REST API and Python SDK
-- [Deployment Guide](docs/DEPLOYMENT.md) - Windows .exe, Docker, production
-- [Troubleshooting](docs/TROUBLESHOOTING.md) - Common issues and solutions
-- [Thesis Appendix](docs/THESIS_APPENDIX.md) - Hyperparameters, dataset details, full results
-- [Architecture](docs/architecture.md) - System design
-- [Threat Model](docs/threat_model.md) - Security considerations
-- [User Study Protocol](docs/user_study_protocol.md) - Evaluation methodology
-- [OpenAPI Docs](http://localhost:8000/docs) - Interactive API explorer
-
----
-
-## 🧪 Testing
+### Building the .exe
 
 ```bash
-# Run all tests
-pytest
-
-# Run unit tests only
-pytest tests/unit -v
-
-# Run integration tests
-pytest tests/integration -m integration
-
-# Run with coverage
-pytest --cov=imagetrust --cov-report=html
-
-# Skip slow tests
-pytest -m "not slow"
-```
-
----
-
-## 🔧 Development
-
-### Setup
-
-```bash
-# Install dev dependencies
-pip install -e ".[dev]"
-
-# Install pre-commit hooks
-pip install pre-commit
-pre-commit install
-```
-
-### Code Quality
-
-```bash
-# Format code
-black src/ tests/
-isort src/ tests/
-
-# Lint
-ruff check src/ tests/
-
-# Type check
-mypy src/imagetrust
-```
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution guidelines.
-
----
-
-## 🐳 Docker
-
-```bash
-# Build image
-docker build -t imagetrust -f docker/Dockerfile .
-
-# Run container
-docker run -p 8000:8000 imagetrust
-
-# With docker-compose
-docker-compose -f docker/docker-compose.yml up
-```
-
----
-
-## 📦 Windows Executable
-
-Build a standalone Windows application (no Python required):
-
-```bash
-# Install build dependencies
-pip install -e ".[desktop]"
-pip install pyinstaller>=6.0.0
-
-# Build .exe (folder distribution)
+pip install pyinstaller PySide6
 python scripts/build_desktop.py
-
-# Build single-file .exe
-python scripts/build_desktop.py --onefile
-
 # Output: dist/ImageTrust/ImageTrust.exe
 ```
 
-See [Deployment Guide](docs/DEPLOYMENT.md) for distribution checklist and code signing.
+---
+
+## Reproducing Results
+
+The full training and evaluation pipeline requires:
+- ~30 GB disk for embeddings
+- NVIDIA GPU with 16 GB VRAM
+- ~2 hours total runtime
+
+```bash
+# Phase 1: Extract embeddings from images
+python scripts/orchestrator/run_embedding_extraction.py \
+    --input_dirs data/train --output_dir data/phase1/embeddings
+
+# Phase 2: Train meta-classifiers (XGBoost + MLP)
+python scripts/orchestrator/run_phase2_training.py
+
+# Phase 3: Generate all paper artifacts (figures + tables)
+python scripts/orchestrator/run_phase3_publication.py
+
+# Cross-generator evaluation (requires GenImage artifacts dataset)
+python scripts/orchestrator/run_cross_generator_eval.py
+```
+
+All experiments use fixed seeds (42, 123, 7) for reproducibility. Hardware: RTX 5080, AMD 7800X3D, 32 GB RAM.
 
 ---
 
-## 🔬 Reproducibility
-
-Reproduce all thesis experiments with a single command:
-
-```bash
-# Full pipeline (data → baselines → evaluation → figures)
-python scripts/reproduce_all.py --data-root ./data --output-dir ./outputs
-
-# Dry run (show what would be executed)
-python scripts/reproduce_all.py --dry-run
-
-# Run specific stages
-python scripts/reproduce_all.py --stage baselines
-python scripts/reproduce_all.py --stage calibration
-python scripts/reproduce_all.py --stage ablation
-```
-
-### Individual Scripts
-
-```bash
-# Baseline comparison
-python scripts/run_baselines.py --dataset data/test --baseline all --train
-
-# Calibration analysis
-python scripts/run_calibration.py --splits-dir data/splits
-
-# Ablation study
-python scripts/run_ablation.py --splits-dir data/splits --generate-tables
-
-# Cross-generator evaluation
-python scripts/run_cross_generator.py --eval-dir data/cross_generator
-
-# Generate LaTeX figures
-python scripts/generate_figures.py --results outputs/baselines/{timestamp}
-
-# Generate LaTeX tables
-python scripts/generate_tables.py --results outputs/baselines/{timestamp}
-
-# Statistical significance tests
-python scripts/statistical_tests.py --results outputs/baselines/{timestamp}
-```
-
----
-
-## 📝 Citation
-
-If you use ImageTrust in your research, please cite:
+## Citation
 
 ```bibtex
-@thesis{imagetrust2024,
-  title={ImageTrust: A Forensic Application for Identifying AI-Generated and Digitally Manipulated Images},
-  author={Your Name},
-  year={2024},
-  school={Your University},
+@mastersthesis{imagetrust2026,
+  title={ImageTrust: A Heterogeneous Fusion Framework for AI-Generated Image Detection
+         with Calibrated Uncertainty and Multi-Label Forensic Verdicts},
+  author={Alexandru, Andrei},
+  year={2026},
+  school={University Name},
   type={Master's Thesis}
 }
 ```
 
 ---
 
-## 📄 License
+## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 🙏 Acknowledgments
-
-- [timm](https://github.com/huggingface/pytorch-image-models) - PyTorch Image Models
-- [C2PA](https://c2pa.org/) - Content Authenticity Initiative
-- MLE-STAR paper for ablation study methodology
-
----
-
-## 📧 Contact
-
-- **Author**: Your Name
-- **Email**: your.email@example.com
-- **GitHub**: [yourusername](https://github.com/yourusername)
-
----
-
-**Made with ❤️ for Master's Thesis**
+MIT License. See [LICENSE](LICENSE) for details.

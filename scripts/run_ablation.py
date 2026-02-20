@@ -27,7 +27,7 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -37,13 +37,150 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 
 def run_ablation_study(
+    dataset_dir: Path,
+    output_dir: Path,
+    ablation_types: List[str],
+    device: Optional[str] = None,
+    max_samples: Optional[int] = None,
+    verbose: bool = True,
+) -> Dict[str, Any]:
+    """
+    Run ablation study experiments using the real AblationStudy class.
+
+    Args:
+        dataset_dir: Directory containing test images (real/ and ai_generated/)
+        output_dir: Output directory for results
+        ablation_types: Types of ablation to run
+        device: Device (cuda/cpu)
+        max_samples: Maximum samples to use (for testing)
+        verbose: Verbose output
+
+    Returns:
+        Dictionary with all ablation results
+    """
+    from PIL import Image
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    if verbose:
+        print("=" * 60)
+        print("IMAGETRUST ABLATION STUDY")
+        print("=" * 60)
+        print(f"Dataset: {dataset_dir}")
+        print(f"Ablation types: {', '.join(ablation_types)}")
+        print("-" * 60)
+
+    # Load dataset
+    dataset = load_dataset(dataset_dir, max_samples=max_samples)
+
+    if not dataset:
+        print("Error: No images found in dataset")
+        return {}
+
+    if verbose:
+        print(f"Loaded {len(dataset)} images")
+
+    # Initialize detector
+    if verbose:
+        print("\nInitializing ComprehensiveDetector...")
+
+    from imagetrust.detection.multi_detector import ComprehensiveDetector
+    detector = ComprehensiveDetector(device=device)
+
+    # Run ablation study
+    if verbose:
+        print("Running ablation study...")
+
+    from imagetrust.evaluation.ablation import AblationStudy
+
+    ablation = AblationStudy(
+        detector=detector,
+        val_dataset=dataset,
+        output_dir=output_dir,
+        verbose=verbose,
+        device=device or detector.device,
+    )
+
+    results = ablation.run_full_study()
+
+    # Print summary
+    if verbose:
+        ablation.print_summary()
+
+    # Save results
+    results_path = ablation.save_results()
+
+    if verbose:
+        print(f"\nResults saved to: {results_path}")
+
+    # Generate LaTeX table
+    latex_table = ablation.generate_latex_table()
+    latex_path = output_dir / "table_ablation.tex"
+    with open(latex_path, "w") as f:
+        f.write(latex_table)
+
+    if verbose:
+        print(f"LaTeX table saved to: {latex_path}")
+
+    return results
+
+
+def load_dataset(dataset_path: Path, max_samples: Optional[int] = None) -> List[Tuple[Any, int]]:
+    """
+    Load dataset from directory structure.
+
+    Expected structure:
+        dataset_path/
+            real/
+                image1.jpg
+                ...
+            ai_generated/
+                image1.jpg
+                ...
+    """
+    from PIL import Image
+
+    dataset = []
+
+    # Load real images (label=0)
+    real_dir = dataset_path / "real"
+    if real_dir.exists():
+        for img_path in real_dir.glob("*"):
+            if img_path.suffix.lower() in [".jpg", ".jpeg", ".png", ".webp"]:
+                try:
+                    img = Image.open(img_path).convert("RGB")
+                    dataset.append((img, 0))
+                except Exception as e:
+                    print(f"Warning: Failed to load {img_path}: {e}")
+
+    # Load AI images (label=1)
+    for ai_dir_name in ["ai_generated", "ai", "fake", "synthetic"]:
+        ai_dir = dataset_path / ai_dir_name
+        if ai_dir.exists():
+            for img_path in ai_dir.glob("*"):
+                if img_path.suffix.lower() in [".jpg", ".jpeg", ".png", ".webp"]:
+                    try:
+                        img = Image.open(img_path).convert("RGB")
+                        dataset.append((img, 1))
+                    except Exception as e:
+                        print(f"Warning: Failed to load {img_path}: {e}")
+
+    if max_samples and len(dataset) > max_samples:
+        import random
+        random.seed(42)
+        dataset = random.sample(dataset, max_samples)
+
+    return dataset
+
+
+def run_ablation_study_simulated(
     splits_dir: Path,
     output_dir: Path,
     ablation_types: List[str],
     verbose: bool = True,
 ) -> Dict[str, Any]:
     """
-    Run ablation study experiments.
+    Run ablation study with simulated data (for demo/testing).
 
     Args:
         splits_dir: Directory containing split files
@@ -54,40 +191,28 @@ def run_ablation_study(
     Returns:
         Dictionary with all ablation results
     """
-    from imagetrust.data.splits import load_split
-
     output_dir.mkdir(parents=True, exist_ok=True)
-
-    # Load split
-    split_path = splits_dir / "default_split.json"
-    if not split_path.exists():
-        print(f"Error: Split file not found: {split_path}")
-        return {}
-
-    split = load_split(split_path)
 
     if verbose:
         print("=" * 60)
-        print("IMAGETRUST ABLATION STUDY")
+        print("IMAGETRUST ABLATION STUDY (SIMULATED DATA)")
         print("=" * 60)
-        print(f"Split: {split.name}")
-        print(f"Test samples: {len(split.test)}")
         print(f"Ablation types: {', '.join(ablation_types)}")
         print("-" * 60)
+
+    # Create synthetic test labels
+    n_samples = 1000
+    test_labels = np.concatenate([np.zeros(n_samples // 2), np.ones(n_samples // 2)])
 
     results = {
         "metadata": {
             "timestamp": datetime.now().isoformat(),
-            "split": split.name,
-            "test_samples": len(split.test),
+            "test_samples": n_samples,
+            "simulated": True,
         },
         "baseline": {},
         "ablations": {},
     }
-
-    # Generate synthetic data for demonstration
-    # In real usage, replace with actual model predictions
-    test_labels = np.array([item["label"] for item in split.test])
 
     # 1. Baseline (full ImageTrust)
     if verbose:
@@ -107,19 +232,28 @@ def run_ablation_study(
             print("\n[2] Backbone architecture ablation...")
 
         backbones = {
-            "efficientnet_b0": 0.88,
-            "convnext_base": 0.89,
-            "vit_base": 0.87,
-            "resnet50": 0.85,
+            "Deepfake-vs-Real": 0.91,
+            "AI-Image-Detector": 0.88,
+            "AIorNot": 0.87,
+            "NYUAD-2025": 0.89,
         }
 
-        results["ablations"]["backbone"] = {}
+        results["backbone_ablation"] = {}
         for backbone, target_acc in backbones.items():
             metrics = _simulate_evaluation(test_labels, accuracy=target_acc)
-            results["ablations"]["backbone"][backbone] = metrics
+            results["backbone_ablation"][backbone] = metrics
 
             if verbose:
                 print(f"  {backbone}: Acc={metrics['accuracy']:.4f}, AUC={metrics['auc']:.4f}")
+
+        # Add ranking
+        ranked = sorted(
+            [(k, v["f1"]) for k, v in results["backbone_ablation"].items()],
+            key=lambda x: -x[1],
+        )
+        results["backbone_ablation"]["ranking"] = [
+            {"model": k, "f1": f1} for k, f1 in ranked
+        ]
 
     # 3. Ensemble strategy ablation
     if "ensemble" in ablation_types or "all" in ablation_types:
@@ -128,77 +262,76 @@ def run_ablation_study(
 
         strategies = {
             "average": 0.90,
-            "weighted": 0.92,  # Best - full model
+            "weighted": 0.92,
             "voting": 0.89,
             "max": 0.87,
-            "stacking": 0.91,
+            "median": 0.88,
         }
 
-        results["ablations"]["ensemble"] = {}
+        results["ensemble_ablation"] = {}
         for strategy, target_acc in strategies.items():
             metrics = _simulate_evaluation(test_labels, accuracy=target_acc)
-            results["ablations"]["ensemble"][strategy] = metrics
+            results["ensemble_ablation"][strategy] = metrics
 
             if verbose:
                 print(f"  {strategy}: Acc={metrics['accuracy']:.4f}, AUC={metrics['auc']:.4f}")
+
+        results["ensemble_ablation"]["best_strategy"] = "weighted"
 
     # 4. Calibration ablation
     if "calibration" in ablation_types or "all" in ablation_types:
         if verbose:
             print("\n[4] Calibration method ablation...")
 
-        calibration_methods = {
-            "none": {"accuracy": 0.91, "ece": 0.08},
-            "temperature": {"accuracy": 0.92, "ece": 0.03},
-            "platt": {"accuracy": 0.91, "ece": 0.04},
-            "isotonic": {"accuracy": 0.91, "ece": 0.02},
+        results["calibration_ablation"] = {
+            "with_calibration": _simulate_evaluation(test_labels, accuracy=0.92),
+            "without_calibration": _simulate_evaluation(test_labels, accuracy=0.91),
         }
+        results["calibration_ablation"]["with_calibration"]["ece"] = 0.031
+        results["calibration_ablation"]["without_calibration"]["ece"] = 0.078
 
-        results["ablations"]["calibration"] = {}
-        for method, targets in calibration_methods.items():
-            metrics = _simulate_evaluation(test_labels, accuracy=targets["accuracy"])
-            metrics["ece"] = targets["ece"] + np.random.randn() * 0.005
-            results["ablations"]["calibration"][method] = metrics
+        for method, ece_target in [("temperature", 0.035), ("platt", 0.042), ("isotonic", 0.028)]:
+            metrics = _simulate_evaluation(test_labels, accuracy=0.91)
+            metrics["ece"] = ece_target
+            metrics["ece_improvement"] = 0.078 - ece_target
+            results["calibration_ablation"][method] = metrics
 
             if verbose:
-                print(f"  {method}: Acc={metrics['accuracy']:.4f}, ECE={metrics['ece']:.4f}")
+                print(f"  {method}: ECE={ece_target:.4f}")
 
-    # 5. Component removal ablation
+    # 5. Signal analysis ablation
     if "components" in ablation_types or "all" in ablation_types:
         if verbose:
-            print("\n[5] Component removal ablation...")
+            print("\n[5] Signal analysis ablation...")
 
-        # Each row shows performance when that component is REMOVED
-        components = {
-            "full_model": 0.92,
-            "without_model_1": 0.90,  # Remove umm-maybe
-            "without_model_2": 0.89,  # Remove Organika
-            "without_model_3": 0.88,  # Remove aiornot
-            "without_model_4": 0.89,  # Remove nyuad
-            "without_signal_analysis": 0.90,
-            "without_calibration": 0.91,
+        results["signal_analysis_ablation"] = {
+            "full": _simulate_evaluation(test_labels, accuracy=0.92),
+            "ml_only": _simulate_evaluation(test_labels, accuracy=0.91),
+            "no_frequency": _simulate_evaluation(test_labels, accuracy=0.915),
+            "no_noise": _simulate_evaluation(test_labels, accuracy=0.918),
         }
+        results["signal_analysis_ablation"]["signal_contribution"] = 0.01
 
-        results["ablations"]["components"] = {}
-        for component, target_acc in components.items():
-            metrics = _simulate_evaluation(test_labels, accuracy=target_acc)
-            results["ablations"]["components"][component] = metrics
-
-            if verbose:
-                delta = baseline_metrics["accuracy"] - metrics["accuracy"]
-                direction = "+" if delta > 0 else ""
-                print(f"  {component}: Acc={metrics['accuracy']:.4f} (delta: {direction}{delta:.4f})")
+        if verbose:
+            for name, metrics in results["signal_analysis_ablation"].items():
+                if isinstance(metrics, dict):
+                    print(f"  {name}: Acc={metrics.get('accuracy', 0):.4f}")
 
     # 6. Compute component importance
     if verbose:
         print("\n[6] Computing component importance...")
 
-    importance = _compute_importance(results)
-    results["importance"] = importance
+    results["component_importance"] = {
+        "calibration": 0.047,
+        "signal_analysis": 0.01,
+        "backbone_selection": 0.02,
+        "ensemble_strategy": 0.015,
+        "ensemble_benefit": 0.03,
+    }
 
     if verbose:
-        print("\nComponent Importance (by accuracy drop when removed):")
-        for component, score in sorted(importance.items(), key=lambda x: -x[1]):
+        print("\nComponent Importance:")
+        for component, score in sorted(results["component_importance"].items(), key=lambda x: -x[1]):
             print(f"  {component}: {score:.4f}")
 
     return results
@@ -380,13 +513,27 @@ def _generate_calibration_ablation_table(results: Dict[str, Any], tables_dir: Pa
 def main():
     parser = argparse.ArgumentParser(
         description="Run ablation study for ImageTrust",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+    # Run with real data
+    python scripts/run_ablation.py --dataset ./data/test --output ./outputs/ablation
+
+    # Run with simulated data (demo)
+    python scripts/run_ablation.py --demo --output ./outputs/ablation_demo
+
+    # Run specific ablation types
+    python scripts/run_ablation.py --dataset ./data/test --ablation-type backbone ensemble
+
+    # Generate tables from existing results
+    python scripts/run_ablation.py --results-file ./outputs/ablation/ablation_results.json --generate-tables
+        """,
     )
 
     parser.add_argument(
-        "--splits-dir",
+        "--dataset",
         type=Path,
-        default=Path("data/splits"),
-        help="Directory containing split files",
+        help="Directory containing test images (real/ and ai_generated/)",
     )
     parser.add_argument(
         "--output-dir",
@@ -400,6 +547,23 @@ def main():
         choices=["all", "backbone", "ensemble", "calibration", "components"],
         default=["all"],
         help="Types of ablation to run",
+    )
+    parser.add_argument(
+        "--device",
+        type=str,
+        default=None,
+        help="Device (cuda/cpu)",
+    )
+    parser.add_argument(
+        "--max-samples",
+        type=int,
+        default=None,
+        help="Maximum samples to use (for quick testing)",
+    )
+    parser.add_argument(
+        "--demo",
+        action="store_true",
+        help="Run with simulated data (for demo/testing)",
     )
     parser.add_argument(
         "--generate-tables",
@@ -430,21 +594,36 @@ def main():
     if args.results_file and args.results_file.exists():
         with open(args.results_file) as f:
             results = json.load(f)
-    else:
-        results = run_ablation_study(
-            args.splits_dir,
-            args.output_dir,
-            args.ablation_type,
-            verbose,
+    elif args.demo:
+        # Run with simulated data
+        results = run_ablation_study_simulated(
+            splits_dir=Path("data/splits"),
+            output_dir=args.output_dir,
+            ablation_types=args.ablation_type,
+            verbose=verbose,
         )
 
         # Save results
         results_path = args.output_dir / "ablation_results.json"
         with open(results_path, "w") as f:
-            json.dump(results, f, indent=2)
+            json.dump(results, f, indent=2, default=str)
 
         if verbose:
             print(f"\nResults saved to: {results_path}")
+    elif args.dataset:
+        # Run with real data
+        results = run_ablation_study(
+            dataset_dir=args.dataset,
+            output_dir=args.output_dir,
+            ablation_types=args.ablation_type,
+            device=args.device,
+            max_samples=args.max_samples,
+            verbose=verbose,
+        )
+    else:
+        print("Error: Either --dataset or --demo must be specified")
+        print("Use --help for usage examples")
+        return 1
 
     # Generate tables
     if args.generate_tables:

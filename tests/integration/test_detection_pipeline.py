@@ -19,6 +19,7 @@ from PIL import Image
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def sample_image():
     """Create a sample test image."""
@@ -58,6 +59,7 @@ def batch_images(tmp_path):
 # =============================================================================
 # AIDetector Integration Tests
 # =============================================================================
+
 
 class TestAIDetectorIntegration:
     """Integration tests for AIDetector."""
@@ -149,6 +151,7 @@ class TestAIDetectorIntegration:
 # Baseline Integration Tests
 # =============================================================================
 
+
 class TestBaselineIntegration:
     """Integration tests for baseline framework."""
 
@@ -213,6 +216,7 @@ class TestBaselineIntegration:
 # Calibration Integration Tests
 # =============================================================================
 
+
 class TestCalibrationIntegration:
     """Integration tests for calibration."""
 
@@ -270,6 +274,7 @@ class TestCalibrationIntegration:
 # Data Pipeline Integration Tests
 # =============================================================================
 
+
 class TestDataPipelineIntegration:
     """Integration tests for data pipeline."""
 
@@ -316,6 +321,7 @@ class TestDataPipelineIntegration:
 # CLI Integration Tests
 # =============================================================================
 
+
 class TestCLIIntegration:
     """Integration tests for CLI commands."""
 
@@ -324,6 +330,7 @@ class TestCLIIntegration:
         """Test CLI analyze command."""
         try:
             from click.testing import CliRunner
+
             from imagetrust.cli import main
 
             runner = CliRunner()
@@ -340,6 +347,7 @@ class TestCLIIntegration:
         """Test CLI info command."""
         try:
             from click.testing import CliRunner
+
             from imagetrust.cli import main
 
             runner = CliRunner()
@@ -354,6 +362,7 @@ class TestCLIIntegration:
 # =============================================================================
 # End-to-End Tests
 # =============================================================================
+
 
 class TestEndToEnd:
     """End-to-end integration tests."""
@@ -371,11 +380,13 @@ class TestEndToEnd:
             results = []
             for path in batch_images:
                 result = detector.detect(str(path))
-                results.append({
-                    "path": str(path),
-                    "ai_probability": result["ai_probability"],
-                    "verdict": result["verdict"].value,
-                })
+                results.append(
+                    {
+                        "path": str(path),
+                        "ai_probability": result["ai_probability"],
+                        "verdict": result["verdict"].value,
+                    }
+                )
 
             # Save results
             output_path = tmp_path / "results.json"
@@ -446,6 +457,7 @@ class TestEndToEnd:
 # Performance Tests
 # =============================================================================
 
+
 class TestPerformance:
     """Performance-related integration tests."""
 
@@ -481,6 +493,7 @@ class TestPerformance:
         """Test that memory doesn't grow unbounded."""
         try:
             import gc
+
             from imagetrust.detection import AIDetector
 
             detector = AIDetector()

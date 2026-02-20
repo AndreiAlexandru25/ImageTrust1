@@ -203,52 +203,129 @@ publish:
 	python -m twine upload dist/*
 
 # ==============================================================================
-# Thesis Pipeline
+# Thesis Pipeline (see docs/ACADEMIC_EVALUATION.md for full protocol)
 # ==============================================================================
 
-thesis: baselines calibration ablation figures tables stats
+# Quick start: generate demo figures with synthetic data
+thesis-demo:
+	@echo "Generating demo figures (synthetic data)..."
+	python scripts/generate_figures.py --demo --output reports/figures/demo --format pdf
+	@echo "Demo figures saved to reports/figures/demo/"
+
+# Full thesis pipeline (requires data in data/splits/)
+thesis-full: train-baselines eval-indomain eval-crossgen eval-robustness ablation figures tables stats
+	@echo ""
+	@echo "============================================"
 	@echo "Full thesis pipeline complete!"
-	@echo "Results in: outputs/paper/"
+	@echo "============================================"
+	@echo "Results: outputs/"
+	@echo "Figures: reports/figures/"
+	@echo "Tables:  reports/tables/"
 
-baselines:
-	@echo "Training and evaluating baselines..."
-	python scripts/run_baselines.py --dataset data/test --baseline all --train
-	@echo "Baseline evaluation complete!"
+# Step 1: Create data splits
+create-splits:
+	@echo "Creating train/val/test splits..."
+	python scripts/create_splits.py \
+		--dataset ./data/raw \
+		--output ./data/splits \
+		--train-ratio 0.7 \
+		--val-ratio 0.15 \
+		--test-ratio 0.15 \
+		--seed 42
+	@echo "Splits saved to data/splits/"
 
-calibration:
-	@echo "Running calibration analysis..."
-	python scripts/run_calibration.py --splits-dir data/splits
-	@echo "Calibration analysis complete!"
+# Step 2: Train baselines
+train-baselines:
+	@echo "Training all baselines (CPU, GPU optional)..."
+	python scripts/run_baselines.py \
+		--dataset ./data/splits \
+		--baseline all \
+		--train \
+		--epochs 10 \
+		--seed 42 \
+		--output ./outputs/baselines
+	@echo "Checkpoints saved to outputs/baselines/checkpoints/"
 
+# Step 3a: In-domain evaluation
+eval-indomain:
+	@echo "Running in-domain evaluation..."
+	python scripts/run_baselines.py \
+		--dataset ./data/splits/test \
+		--baseline all \
+		--output ./outputs/eval_indomain
+	@echo "Results in outputs/eval_indomain/"
+
+# Step 3b: Cross-generator evaluation
+eval-crossgen:
+	@echo "Running cross-generator evaluation..."
+	python scripts/run_baselines.py \
+		--dataset ./data/splits/test \
+		--baseline all \
+		--cross-generator \
+		--output ./outputs/eval_crossgen
+	@echo "Results in outputs/eval_crossgen/"
+
+# Step 3c: Robustness evaluation
+eval-robustness:
+	@echo "Running degradation robustness tests..."
+	python scripts/run_baselines.py \
+		--dataset ./data/splits/test \
+		--baseline all \
+		--degradation \
+		--output ./outputs/eval_robustness
+	@echo "Results in outputs/eval_robustness/"
+
+# Step 4: Ablation study
 ablation:
 	@echo "Running ablation study..."
-	python scripts/run_ablation.py --splits-dir data/splits --generate-tables
-	@echo "Ablation study complete!"
+	python scripts/run_ablation.py \
+		--dataset ./data/splits/val \
+		--output ./outputs/ablation
+	@echo "Results in outputs/ablation/"
 
+# Step 5: Calibration analysis
+calibration:
+	@echo "Running calibration analysis..."
+	python scripts/evaluate_calibration.py \
+		--dataset ./data/splits/val \
+		--output ./outputs/calibration
+	@echo "Results in outputs/calibration/"
+
+# Step 6: Generate figures
 figures:
-	@echo "Generating thesis figures..."
-	python scripts/generate_figures.py --output outputs/paper/figures
-	@echo "Figures saved to outputs/paper/figures/"
+	@echo "Generating thesis figures (PDF)..."
+	mkdir -p reports/figures
+	python scripts/generate_figures.py \
+		--results ./outputs/eval_indomain \
+		--output ./reports/figures \
+		--format pdf
+	@echo "Figures saved to reports/figures/"
 
+# Step 7: Generate LaTeX tables
 tables:
 	@echo "Generating LaTeX tables..."
-	python scripts/generate_tables.py --output outputs/paper/tables
-	@echo "Tables saved to outputs/paper/tables/"
+	mkdir -p reports/tables
+	python scripts/generate_tables.py \
+		--results ./outputs/eval_indomain \
+		--cross-gen ./outputs/eval_crossgen \
+		--ablation ./outputs/ablation \
+		--output ./reports/tables \
+		--format latex
+	@echo "Tables saved to reports/tables/"
 
+# Step 8: Statistical significance tests
 stats:
 	@echo "Running statistical significance tests..."
-	python scripts/statistical_tests.py --output outputs/paper/stats
-	@echo "Statistical results saved to outputs/paper/stats/"
+	mkdir -p reports/tables
+	python scripts/statistical_tests.py \
+		--predictions ./outputs/eval_indomain \
+		--output ./reports/tables/statistical_tests.json
+	@echo "Results in reports/tables/statistical_tests.json"
 
-cross-generator:
-	@echo "Running cross-generator evaluation..."
-	python scripts/run_cross_generator.py --eval-dir data/evaluation/cross_generator
-	@echo "Cross-generator evaluation complete!"
-
-degradation:
-	@echo "Running degradation robustness tests..."
-	python scripts/run_degradation.py --eval-dir data/evaluation/degradation
-	@echo "Degradation tests complete!"
+# Legacy aliases for compatibility
+baselines: train-baselines eval-indomain
+cross-generator: eval-crossgen
+degradation: eval-robustness
 
 # ==============================================================================
 # Build Executables

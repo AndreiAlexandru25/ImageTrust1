@@ -8,9 +8,9 @@ This package provides tools for:
 - Generating comprehensive forensic reports.
 """
 
-__version__ = "0.1.0"
-__author__ = "Your Name"
-__email__ = "your.email@example.com"
+__version__ = "1.0.1"
+__author__ = "AndreiAlexandru25"
+__email__ = "256049470+AndreiAlexandru25@users.noreply.github.com"
 
 # Core imports
 from imagetrust.core.config import get_settings, Settings

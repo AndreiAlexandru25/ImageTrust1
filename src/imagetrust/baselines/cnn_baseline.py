@@ -465,7 +465,7 @@ class CNNBaseline(BaselineDetector):
         """Load model checkpoint."""
         import torch
 
-        state = torch.load(path, map_location="cpu")
+        state = torch.load(path, map_location="cpu", weights_only=False)
 
         self.config = state["config"]
         self.backbone_name = state["backbone_name"]

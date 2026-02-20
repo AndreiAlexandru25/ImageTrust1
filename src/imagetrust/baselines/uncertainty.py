@@ -23,6 +23,7 @@ class UncertaintyMethod(Enum):
     CONFIDENCE = "confidence"        # 1 - max(probability)
     CALIBRATED = "calibrated"        # Post-calibration uncertainty
     ENSEMBLE_VARIANCE = "ensemble"   # Variance across ensemble members
+    CONFORMAL = "conformal"          # Conformal prediction (NEW)
 
 
 @dataclass
@@ -93,6 +94,7 @@ class UncertaintyEstimator:
         method: Union[str, UncertaintyMethod] = "entropy",
         abstain_threshold: Optional[float] = None,
         target_coverage: Optional[float] = None,
+        conformal_alpha: float = 0.1,
     ):
         """
         Initialize uncertainty estimator.
@@ -101,6 +103,7 @@ class UncertaintyEstimator:
             method: Uncertainty estimation method
             abstain_threshold: Fixed threshold for abstaining (uncertainty > threshold -> abstain)
             target_coverage: Target coverage rate (finds threshold automatically)
+            conformal_alpha: Miscoverage rate for conformal prediction (NEW)
         """
         if isinstance(method, str):
             method = UncertaintyMethod(method)
@@ -109,6 +112,48 @@ class UncertaintyEstimator:
         self.abstain_threshold = abstain_threshold
         self.target_coverage = target_coverage
         self._fitted_threshold: Optional[float] = None
+
+        # Conformal prediction (NEW)
+        self.conformal_alpha = conformal_alpha
+        self._conformal_predictor = None
+        if method == UncertaintyMethod.CONFORMAL:
+            self._init_conformal_predictor()
+
+    def _init_conformal_predictor(self) -> None:
+        """Initialize conformal predictor."""
+        try:
+            from imagetrust.detection.conformal import ConformalPredictor, ConformalMethod
+            self._conformal_predictor = ConformalPredictor(
+                alpha=self.conformal_alpha,
+                method=ConformalMethod.APS,
+            )
+        except ImportError:
+            pass
+
+    def calibrate_conformal(
+        self,
+        cal_probs: np.ndarray,
+        cal_labels: np.ndarray,
+    ) -> Dict[str, Any]:
+        """
+        Calibrate conformal predictor.
+
+        Args:
+            cal_probs: Calibration probabilities.
+            cal_labels: Calibration labels.
+
+        Returns:
+            Calibration result dict.
+        """
+        if self._conformal_predictor is None:
+            raise RuntimeError("Conformal predictor not initialized")
+
+        result = self._conformal_predictor.calibrate(cal_probs, cal_labels)
+        return {
+            "threshold": result.threshold,
+            "coverage_level": result.coverage_level,
+            "empirical_coverage": result.empirical_coverage,
+        }
 
     def estimate_uncertainty(
         self,
@@ -137,8 +182,25 @@ class UncertaintyEstimator:
             return self._ensemble_uncertainty(ensemble_probs)
         elif self.method == UncertaintyMethod.CALIBRATED:
             return self._entropy_uncertainty(probability)
+        elif self.method == UncertaintyMethod.CONFORMAL:
+            return self._conformal_uncertainty(probability)
         else:
             return self._entropy_uncertainty(probability)
+
+    def _conformal_uncertainty(self, p: float) -> float:
+        """
+        Conformal prediction-based uncertainty.
+
+        Returns 1.0 if prediction set contains both classes (uncertain),
+        0.0 if prediction set contains single class (certain).
+        """
+        if self._conformal_predictor is None or not self._conformal_predictor._calibrated:
+            # Fallback to entropy if not calibrated
+            return self._entropy_uncertainty(p)
+
+        prediction = self._conformal_predictor.predict(p)
+        # If set size > 1, we're uncertain
+        return 1.0 if prediction.is_uncertain else 0.0
 
     def _entropy_uncertainty(self, p: float) -> float:
         """Shannon entropy uncertainty (max at p=0.5)."""

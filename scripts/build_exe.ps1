@@ -1,36 +1,143 @@
+# Cyber Scout Windows EXE Build Script
+#
+# This script builds the Cyber Scout desktop application as a Windows executable.
+#
+# Prerequisites:
+#   - Python 3.10+ with pip
+#   - Virtual environment activated
+#   - PyInstaller: pip install pyinstaller
+#   - pywebview: pip install pywebview
+#
+# Usage:
+#   .\scripts\build_exe.ps1
+#   .\scripts\build_exe.ps1 -Clean      # Clean build directories first
+#
+# Output:
+#   dist\CyberScout\CyberScout.exe
+
+param(
+    [switch]$Clean,
+    [switch]$OneFile
+)
+
 $ErrorActionPreference = "Stop"
 
+Write-Host "============================================" -ForegroundColor Cyan
+Write-Host "  Cyber Scout Windows EXE Builder" -ForegroundColor Cyan
+Write-Host "============================================" -ForegroundColor Cyan
+Write-Host ""
+
+# Get project root
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
+Write-Host "Project root: $root"
 
-if (!(Test-Path ".\\venv\\Scripts\\Activate.ps1")) {
-    Write-Host "Virtual environment not found. Please create venv first." -ForegroundColor Yellow
-    exit 1
+# Check for venv
+if (!(Test-Path ".\venv\Scripts\Activate.ps1")) {
+    Write-Host "Virtual environment not found. Creating..." -ForegroundColor Yellow
+    python -m venv venv
 }
 
-. .\\venv\\Scripts\\Activate.ps1
+# Activate venv
+. .\venv\Scripts\Activate.ps1
 
-pip install -q pyinstaller
+# Install required packages
+Write-Host ""
+Write-Host "Installing build dependencies..." -ForegroundColor Yellow
+pip install -q pyinstaller pywebview
 
-$exePath = Join-Path $root "dist\\ImageTrust.exe"
+# Clean if requested
+if ($Clean) {
+    Write-Host ""
+    Write-Host "Cleaning build directories..." -ForegroundColor Yellow
 
-# Stop running EXE if any
+    @("build", "dist") | ForEach-Object {
+        $path = Join-Path $root $_
+        if (Test-Path $path) {
+            Remove-Item -Recurse -Force $path
+            Write-Host "  Removed: $_"
+        }
+    }
+
+    # Remove old .spec cache
+    Get-ChildItem -Path $root -Filter "*.spec.bak" -ErrorAction SilentlyContinue | Remove-Item -Force
+}
+
+# Stop any running instances
+Write-Host ""
+Write-Host "Stopping any running instances..." -ForegroundColor Yellow
+Get-Process -Name "CyberScout" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 Get-Process -Name "ImageTrust" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 1
 
-# Remove old EXE to avoid permission errors
-if (Test-Path $exePath) {
-    try { Remove-Item $exePath -Force } catch {}
+# Build
+Write-Host ""
+Write-Host "Building Cyber Scout..." -ForegroundColor Yellow
+Write-Host ""
+
+$specFile = Join-Path $root "CyberScout.spec"
+
+if ($OneFile) {
+    # One-file build (slower startup, single exe)
+    Write-Host "Building ONE-FILE executable..." -ForegroundColor Cyan
+    pyinstaller --noconfirm --clean `
+        --noconsole `
+        --onefile `
+        --name CyberScout `
+        --add-data "assets;assets" `
+        --add-data "src\imagetrust\frontend;imagetrust\frontend" `
+        --hidden-import streamlit `
+        --hidden-import webview `
+        --hidden-import imagetrust.forensics `
+        --hidden-import imagetrust.frontend.cyber_app `
+        src\imagetrust\frontend\desktop_launcher.py
+
+    $exePath = Join-Path $root "dist\CyberScout.exe"
+} else {
+    # One-folder build (faster startup, folder with exe)
+    if (Test-Path $specFile) {
+        Write-Host "Using spec file: $specFile" -ForegroundColor Cyan
+        pyinstaller --noconfirm $specFile
+    } else {
+        Write-Host "Building ONE-FOLDER executable..." -ForegroundColor Cyan
+        pyinstaller --noconfirm --clean `
+            --noconsole `
+            --name CyberScout `
+            --add-data "assets;assets" `
+            --add-data "src\imagetrust\frontend;imagetrust\frontend" `
+            --hidden-import streamlit `
+            --hidden-import webview `
+            --hidden-import imagetrust.forensics `
+            --hidden-import imagetrust.frontend.cyber_app `
+            src\imagetrust\frontend\desktop_launcher.py
+    }
+
+    $exePath = Join-Path $root "dist\CyberScout\CyberScout.exe"
 }
 
-$distPath = Join-Path $root "dist"
-$buildPath = Join-Path $root "build"
-
-pyinstaller --noconsole --onefile --name ImageTrust --distpath $distPath --workpath $buildPath src\\imagetrust\\desktop_app.py
-
+# Verify output
+Write-Host ""
 if (Test-Path $exePath) {
-    Write-Host "EXE generated in: $exePath" -ForegroundColor Green
+    Write-Host "============================================" -ForegroundColor Green
+    Write-Host "  BUILD SUCCESSFUL!" -ForegroundColor Green
+    Write-Host "============================================" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "Output: $exePath" -ForegroundColor White
+
+    $exeSize = [math]::Round((Get-Item $exePath).Length / 1MB, 2)
+    Write-Host "Size: $exeSize MB" -ForegroundColor White
+    Write-Host ""
+    Write-Host "To run:" -ForegroundColor Cyan
+    Write-Host "  $exePath"
+    Write-Host ""
+    Write-Host "NOTE: Target machine requires WebView2 Runtime" -ForegroundColor Yellow
+    Write-Host "Download: https://developer.microsoft.com/microsoft-edge/webview2/"
 } else {
-    Write-Host "EXE not found. Check build logs in $buildPath." -ForegroundColor Red
-    Write-Host "Try running: pyinstaller --clean --noconsole --onefile --name ImageTrust src\\imagetrust\\desktop_app.py"
+    Write-Host "============================================" -ForegroundColor Red
+    Write-Host "  BUILD FAILED!" -ForegroundColor Red
+    Write-Host "============================================" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "Expected output: $exePath" -ForegroundColor Red
+    Write-Host "Check build logs above for errors."
+    exit 1
 }

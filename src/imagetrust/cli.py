@@ -11,11 +11,13 @@ from rich.console import Console
 from rich.table import Table
 from rich.progress import Progress
 
+from imagetrust import __version__
+
 console = Console()
 
 
 @click.group()
-@click.version_option(version="0.1.0", prog_name="imagetrust")
+@click.version_option(version=__version__, prog_name="imagetrust")
 def main():
     """ImageTrust: AI-Generated Image Detection CLI"""
     pass
@@ -178,13 +180,13 @@ def ui(port: int):
     """Launch the Streamlit web UI."""
     import subprocess
     import sys
-    
+
     app_path = Path(__file__).parent / "frontend" / "app.py"
-    
+
     console.print(f"\n[bold]Starting ImageTrust UI[/bold]")
     console.print(f"   URL: http://localhost:{port}")
     console.print("\n[dim]Press Ctrl+C to stop[/dim]\n")
-    
+
     subprocess.run([
         sys.executable, "-m", "streamlit", "run",
         str(app_path),
@@ -215,38 +217,162 @@ def info():
 
 
 @main.command()
-@click.option("--legacy", is_flag=True, help="Use legacy Tkinter version")
-def desktop(legacy: bool):
-    """Launch the desktop GUI application."""
-    if legacy:
-        # Use legacy Tkinter version
-        console.print("\n[bold]Starting ImageTrust Desktop (Tkinter)[/bold]")
-        try:
-            from imagetrust.desktop_app import main as tkinter_main
-            tkinter_main()
-        except ImportError as e:
-            console.print(f"[red]Error: {e}[/red]")
-            console.print("[dim]Make sure tkinter is installed[/dim]")
-            raise click.Abort()
-    else:
-        # Use modern PySide6 version
-        console.print("\n[bold]Starting ImageTrust Desktop (Qt)[/bold]")
-        try:
-            from imagetrust.desktop import main as qt_main
-            qt_main()
-        except ImportError as e:
-            console.print(f"[red]Error: PySide6 not installed[/red]")
-            console.print("[dim]Install with: pip install 'imagetrust[desktop]'[/dim]")
-            console.print(f"\n[dim]Details: {e}[/dim]")
+@click.argument("image_path", type=click.Path(exists=True))
+@click.option("--output", "-o", type=click.Path(), default="./outputs", help="Output directory")
+@click.option("--format", "-f", type=click.Choice(["all", "json", "md"]), default="all", help="Output format")
+@click.option("--no-ai", is_flag=True, help="Skip AI detection (faster)")
+@click.option("--verbose", "-v", is_flag=True, help="Verbose output")
+def forensics(image_path: str, output: str, format: str, no_ai: bool, verbose: bool):
+    """
+    Run comprehensive forensics analysis.
 
-            # Fallback to Tkinter
-            console.print("\n[yellow]Falling back to Tkinter version...[/yellow]")
-            try:
-                from imagetrust.desktop_app import main as tkinter_main
-                tkinter_main()
-            except ImportError:
-                console.print("[red]Neither PySide6 nor Tkinter available[/red]")
-                raise click.Abort()
+    Analyzes image for manipulation, recompression, screenshots,
+    social media processing, and optionally AI generation.
+    """
+    from imagetrust.forensics import ForensicsEngine
+    from imagetrust.forensics.base import PluginCategory
+
+    console.print(f"\n[bold cyan]ImageTrust Forensics Analysis[/bold cyan]")
+    console.print(f"Image: {image_path}")
+    console.print("")
+
+    try:
+        # Initialize engine
+        with console.status("Initializing forensics engine..."):
+            categories = [
+                PluginCategory.PIXEL,
+                PluginCategory.METADATA,
+                PluginCategory.SOURCE,
+            ]
+            if not no_ai:
+                categories.append(PluginCategory.AI_DETECTION)
+
+            engine = ForensicsEngine()
+
+        # Run analysis
+        with console.status("Running forensics analysis..."):
+            report = engine.analyze(image_path, categories=categories)
+
+        # Print summary
+        report.print_summary()
+
+        # Save outputs
+        output_path = Path(output)
+        saved = report.save(output_path)
+
+        console.print(f"\n[dim]Report saved to: {output_path / report.run_id}[/dim]")
+
+        if verbose:
+            console.print(f"\n[dim]Files saved:[/dim]")
+            for name, path in saved.items():
+                console.print(f"  - {name}: {path}")
+
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        if verbose:
+            import traceback
+            console.print(f"[dim]{traceback.format_exc()}[/dim]")
+        raise click.Abort()
+
+
+@main.command("forensics-batch")
+@click.argument("directory", type=click.Path(exists=True))
+@click.option("--output", "-o", type=click.Path(), default="./outputs", help="Output directory")
+@click.option("--no-ai", is_flag=True, help="Skip AI detection (faster)")
+def forensics_batch(directory: str, output: str, no_ai: bool):
+    """Run forensics analysis on all images in a directory."""
+    from imagetrust.forensics import ForensicsEngine
+    from imagetrust.forensics.base import PluginCategory
+    from rich.progress import Progress
+
+    dir_path = Path(directory)
+    images = []
+    for ext in ["*.jpg", "*.jpeg", "*.png", "*.webp"]:
+        images.extend(dir_path.glob(ext))
+        images.extend(dir_path.glob(ext.upper()))
+
+    if not images:
+        console.print("[yellow]No images found in directory[/yellow]")
+        return
+
+    console.print(f"\n[bold]Forensics Batch Analysis[/bold]")
+    console.print(f"Found {len(images)} images")
+    console.print("")
+
+    try:
+        categories = [
+            PluginCategory.PIXEL,
+            PluginCategory.METADATA,
+            PluginCategory.SOURCE,
+        ]
+        if not no_ai:
+            categories.append(PluginCategory.AI_DETECTION)
+
+        engine = ForensicsEngine()
+        output_path = Path(output)
+
+        with Progress() as progress:
+            task = progress.add_task("Analyzing...", total=len(images))
+
+            for img_path in images:
+                report = engine.analyze(img_path, categories=categories)
+                report.save(output_path)
+                progress.update(task, advance=1)
+
+        console.print(f"\n[green]Analysis complete![/green]")
+        console.print(f"Results saved to: {output_path}")
+
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise click.Abort()
+
+
+@main.command("forensics-plugins")
+def forensics_plugins():
+    """List available forensics plugins."""
+    from imagetrust.forensics import ForensicsEngine
+
+    engine = ForensicsEngine()
+    plugins = engine.get_available_plugins()
+
+    from rich.table import Table
+
+    table = Table(title="Available Forensics Plugins")
+    table.add_column("ID", style="cyan")
+    table.add_column("Name")
+    table.add_column("Category")
+    table.add_column("Description")
+
+    for p in plugins:
+        table.add_row(
+            p["id"],
+            p["name"],
+            p["category"],
+            p["description"][:50] + "..." if len(p["description"]) > 50 else p["description"],
+        )
+
+    console.print(table)
+
+
+@main.command()
+def desktop():
+    """Launch ImageTrust desktop application (PySide6 / Qt6).
+
+    Professional offline forensics UI with calibrated thresholds,
+    drag-and-drop, and JSON report export.
+    """
+    console.print("\n[bold]Starting ImageTrust Desktop[/bold]")
+    try:
+        from imagetrust.frontend.pyside_app import main as qt_main
+        qt_main()
+    except ImportError as e:
+        console.print(f"[red]Error: PySide6 not installed[/red]")
+        console.print("[dim]Install with: pip install PySide6[/dim]")
+        console.print(f"\n[dim]Details: {e}[/dim]")
+        raise click.Abort()
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise click.Abort()
 
 
 if __name__ == "__main__":

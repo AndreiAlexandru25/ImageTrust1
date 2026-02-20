@@ -1,126 +1,91 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
-PyInstaller spec file for ImageTrust Desktop Application.
+ImageTrust Desktop (PySide6) - PyInstaller Spec File
 
-Usage:
-    # Build folder distribution (recommended)
-    pyinstaller ImageTrust.spec
-
-    # Build single-file executable (slower startup, larger file)
-    pyinstaller ImageTrust.spec --onefile
+Build command:
+    pyinstaller --noconfirm ImageTrust.spec
 
 Output:
-    dist/ImageTrust/ImageTrust.exe  (folder mode)
-    dist/ImageTrust.exe             (onefile mode)
-
-Requirements:
-    pip install 'imagetrust[desktop]'
-    pip install pyinstaller
+    dist/ImageTrust/ImageTrust.exe
 """
 
 import os
-from pathlib import Path
-
-# Project root (where this spec file is located)
-PROJECT_ROOT = Path(SPECPATH)
 
 block_cipher = None
 
-# Data files to include
+ROOT = os.path.abspath(".")
+ENTRY_POINT = os.path.join(ROOT, "src", "imagetrust", "frontend", "pyside_app.py")
+
 datas = [
-    # Configuration files
-    (str(PROJECT_ROOT / 'configs'), 'configs'),
+    (os.path.join(ROOT, "configs"), "configs"),
+    (os.path.join(ROOT, "assets"), "assets"),
 ]
+datas = [(src, dst) for src, dst in datas if os.path.exists(src)]
 
-# Add assets folder if it exists
-assets_path = PROJECT_ROOT / 'assets'
-if assets_path.exists():
-    datas.append((str(assets_path), 'assets'))
-
-# Hidden imports - modules PyInstaller might miss
 hiddenimports = [
-    # Core dependencies
-    'PIL',
-    'PIL.Image',
-    'PIL.ImageTk',
-    'numpy',
-    'scipy',
-    'scipy.ndimage',
-    'sklearn',
-    'sklearn.linear_model',
-    'sklearn.isotonic',
-    'sklearn.calibration',
-
-    # Deep learning (conditionally loaded)
-    'torch',
-    'torchvision',
-    'torchvision.transforms',
-    'transformers',
-    'timm',
-    'timm.models',
-
-    # Qt/PySide6
-    'PySide6',
-    'PySide6.QtCore',
-    'PySide6.QtGui',
-    'PySide6.QtWidgets',
-
-    # ImageTrust modules
-    'imagetrust',
-    'imagetrust.core',
-    'imagetrust.core.config',
-    'imagetrust.core.types',
-    'imagetrust.detection',
-    'imagetrust.detection.multi_detector',
-    'imagetrust.detection.calibration',
-    'imagetrust.detection.generator_identifier',
-    'imagetrust.utils',
-    'imagetrust.utils.scoring',
-    'imagetrust.utils.helpers',
-    'imagetrust.utils.image_utils',
-    'imagetrust.utils.logging',
-    'imagetrust.metadata',
-    'imagetrust.metadata.exif_parser',
-    'imagetrust.desktop',
-    'imagetrust.desktop.app',
-
-    # Optional dependencies
-    'exifread',
-    'cv2',
+    "imagetrust",
+    "imagetrust.frontend",
+    "imagetrust.frontend.pyside_app",
+    "imagetrust.detection",
+    "imagetrust.detection.multi_detector",
+    "imagetrust.detection.calibration",
+    "imagetrust.detection.preprocessing",
+    "imagetrust.detection.models",
+    "imagetrust.detection.models.calibrated_ensemble",
+    "imagetrust.detection.models.kaggle_detector",
+    "imagetrust.utils",
+    "imagetrust.utils.scoring",
+    "imagetrust.core",
+    "imagetrust.core.config",
+    "imagetrust.core.types",
+    "imagetrust.metadata",
+    "imagetrust.baselines",
+    "imagetrust.baselines.uncertainty",
+    "PySide6",
+    "PySide6.QtCore",
+    "PySide6.QtGui",
+    "PySide6.QtWidgets",
+    "PIL",
+    "PIL.Image",
+    "numpy",
+    "scipy",
+    "scipy.ndimage",
+    "sklearn",
+    "sklearn.calibration",
+    "torch",
+    "torchvision",
+    "transformers",
+    "timm",
+    "exifread",
+    "pydantic",
+    "pydantic_settings",
+    "yaml",
+    "loguru",
+    "tqdm",
+    "cv2",
 ]
 
-# Modules to exclude (reduce bundle size)
 excludes = [
-    # Development tools
-    'pytest',
-    'unittest',
-    'test',
-    'tests',
-    'sphinx',
-    'jupyter',
-    'notebook',
-    'IPython',
-
-    # Not needed for desktop
-    'streamlit',
-    'fastapi',
-    'uvicorn',
-    'starlette',
-
-    # Tkinter (using PySide6)
-    'tkinter',
-    '_tkinter',
-
-    # Large optional packages
-    'matplotlib',
-    'pandas',
+    "streamlit",
+    "matplotlib",
+    "pandas",
+    "reportlab",
+    "jinja2",
+    "uvicorn",
+    "fastapi",
+    "IPython",
+    "jupyter",
+    "notebook",
+    "pytest",
+    "black",
+    "isort",
+    "mypy",
+    "flake8",
 ]
 
 a = Analysis(
-    # Entry point: PySide6 desktop app
-    [str(PROJECT_ROOT / 'src' / 'imagetrust' / 'desktop' / 'app.py')],
-
-    pathex=[str(PROJECT_ROOT / 'src')],
+    [ENTRY_POINT],
+    pathex=[os.path.join(ROOT, "src")],
     binaries=[],
     datas=datas,
     hiddenimports=hiddenimports,
@@ -132,40 +97,31 @@ a = Analysis(
     win_private_assemblies=False,
     cipher=block_cipher,
     noarchive=False,
-    optimize=1,  # Basic optimization
 )
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
-# Executable configuration
+icon_path = os.path.join(ROOT, "assets", "icon.ico")
+
 exe = EXE(
     pyz,
     a.scripts,
-    [],  # Empty for folder mode; a.binaries + a.datas for onefile
-    exclude_binaries=True,  # True for folder mode
-    name='ImageTrust',
+    [],
+    exclude_binaries=True,
+    name="ImageTrust",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    upx_exclude=[
-        'vcruntime140.dll',
-        'python*.dll',
-        'Qt*.dll',
-        'PySide6*.dll',
-    ],
-    runtime_tmpdir=None,
-    console=False,  # No console window (GUI app)
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    # Icon (create assets/icon.ico for custom icon)
-    icon=str(assets_path / 'icon.ico') if (assets_path / 'icon.ico').exists() else None,
+    icon=icon_path if os.path.exists(icon_path) else None,
 )
 
-# Collect all files into distribution folder
 coll = COLLECT(
     exe,
     a.binaries,
@@ -173,10 +129,6 @@ coll = COLLECT(
     a.datas,
     strip=False,
     upx=True,
-    upx_exclude=[
-        'vcruntime140.dll',
-        'python*.dll',
-        'Qt*.dll',
-    ],
-    name='ImageTrust',
+    upx_exclude=[],
+    name="ImageTrust",
 )
