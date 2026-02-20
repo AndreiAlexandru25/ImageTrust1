@@ -78,7 +78,7 @@ reports/
 results/
 tmp/
 
-# Claude Code
+# IDE / tool config
 .claude/
 
 # Logs

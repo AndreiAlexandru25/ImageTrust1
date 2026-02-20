@@ -47,7 +47,7 @@
 
 ### 1.2 Baseline Comparison (OBLIGATORIU)
 
-Conform CLAUDE.md, trebuie comparație cu **minimum 3 baseline-uri**:
+Conform cerințelor disertației, trebuie comparație cu **minimum 3 baseline-uri**:
 
 | Baseline | Metodă | Implementare | Status |
 |----------|--------|--------------|--------|

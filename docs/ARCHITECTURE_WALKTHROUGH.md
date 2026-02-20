@@ -1189,7 +1189,7 @@ DEMO SCRIPT:
 - [ ] Full cross-generator evaluation (8+ generators)
 - [ ] Degradation robustness study (JPEG Q, resize, blur, noise)
 - [ ] User study with 20+ participants
-- [ ] Comparison tables (Tables 1-6 in CLAUDE.md)
+- [ ] Comparison tables (Tables 1-6 per thesis requirements)
 - [ ] Statistical significance tests (McNemar, paired t-test)
 
 ---
