@@ -1,137 +1,137 @@
-# Ghid de Testare - Cyber Scout Desktop
+# Testing Guide - Cyber Scout Desktop
 
-## Fix-uri Aplicate (v2.0.0)
+## Applied Fixes (v2.0.0)
 
-### A) WebView2 Pre-check (fără loop)
-- ✅ Verificare registry Windows pentru WebView2 Runtime
-- ✅ Verificare import pywebview
-- ✅ Verificare existență msedgewebview2.exe
-- ✅ UN SINGUR dialog dacă lipsește ("WebView2 Required")
-- ✅ Opțiune de download + exit (nu retry)
+### A) WebView2 Pre-check (no loop)
+- ✅ Windows registry check for WebView2 Runtime
+- ✅ pywebview import verification
+- ✅ msedgewebview2.exe existence check
+- ✅ A SINGLE dialog if missing ("WebView2 Required")
+- ✅ Download option + exit (no retry)
 
-### B) Retry Limitat pentru Streamlit
-- ✅ Maximum 3 încercări
-- ✅ Backoff exponențial: 2s, 5s, 10s
-- ✅ Timeout 90s per încercare
-- ✅ Kill complet subprocess între încercări
-- ✅ UN SINGUR dialog final la eșec
+### B) Limited Retry for Streamlit
+- ✅ Maximum 3 attempts
+- ✅ Exponential backoff: 2s, 5s, 10s
+- ✅ 90s timeout per attempt
+- ✅ Full subprocess kill between attempts
+- ✅ A SINGLE final dialog on failure
 
 ### C) Zero Popup Spam
-- ✅ Single-instance lock (mutex pe Windows)
+- ✅ Single-instance lock (mutex on Windows)
 - ✅ Rate-limiting: max 1 dialog per run
-- ✅ Dialog "Already Running" dacă e deschis deja
+- ✅ "Already Running" dialog if already open
 
-### D) Logging pentru Debug
-- ✅ Log file: `%TEMP%/cyberscout_launcher.log` (frozen) sau `outputs/cyberscout_launcher.log` (dev)
-- ✅ Flag `--debug` pentru output în consolă
-- ✅ Logare: port, cmd, retries, health-check, stderr, motiv WebView2 failure
+### D) Logging for Debug
+- ✅ Log file: `%TEMP%/cyberscout_launcher.log` (frozen) or `outputs/cyberscout_launcher.log` (dev)
+- ✅ `--debug` flag for console output
+- ✅ Logging: port, cmd, retries, health-check, stderr, WebView2 failure reason
 
 ---
 
-## Cum Testezi
+## How to Test
 
-### 1. Testare în Development (fără build)
+### 1. Testing in Development (without build)
 
 ```bash
 cd C:\Users\Mafia\Downloads\disertatie\imagetrust
 
-# Testare normală
+# Normal testing
 python -m imagetrust desktop
 
-# Testare cu debug logging
+# Testing with debug logging
 python -m imagetrust desktop --debug
 
-# Testare cu port specific
+# Testing with specific port
 python -m imagetrust desktop --debug --port 8502
 ```
 
-### 2. Testare Cyber Scout (doar Streamlit, fără fereastră nativă)
+### 2. Testing Cyber Scout (Streamlit only, without native window)
 
 ```bash
-# Rulează doar serverul Streamlit
+# Run only the Streamlit server
 python -m imagetrust cyber
 
-# Apoi deschide în browser: http://localhost:8501
+# Then open in browser: http://localhost:8501
 ```
 
-### 3. Testare EXE (după build)
+### 3. Testing EXE (after build)
 
 ```bash
 # Build
 cd C:\Users\Mafia\Downloads\disertatie\imagetrust
 pyinstaller CyberScout.spec --clean
 
-# Rulare
+# Run
 dist\CyberScout\CyberScout.exe
 
-# Dacă ai probleme, verifică log-ul
+# If you have issues, check the log
 type %TEMP%\cyberscout_launcher.log
 ```
 
 ---
 
-## Scenarii de Test
+## Test Scenarios
 
-### Scenariu 1: Pornire Normală
-1. Rulează `imagetrust desktop`
-2. **Așteptat:**
-   - Afișează "Checking for existing instances..."
-   - Afișează "Checking WebView2 runtime..."
-   - Afișează "WebView2 OK"
-   - Afișează "Finding available port..."
-   - Afișează "Using port: 8501"
-   - Afișează "Starting analysis server..."
-   - Afișează "Server ready!"
-   - Se deschide fereastra Cyber Scout
+### Scenario 1: Normal Startup
+1. Run `imagetrust desktop`
+2. **Expected:**
+   - Displays "Checking for existing instances..."
+   - Displays "Checking WebView2 runtime..."
+   - Displays "WebView2 OK"
+   - Displays "Finding available port..."
+   - Displays "Using port: 8501"
+   - Displays "Starting analysis server..."
+   - Displays "Server ready!"
+   - The Cyber Scout window opens
 
-### Scenariu 2: Instanță Dublă
-1. Rulează `imagetrust desktop` (prima instanță)
-2. Într-un alt terminal, rulează din nou `imagetrust desktop`
-3. **Așteptat:**
-   - A doua instanță afișează UN SINGUR dialog "Already Running"
-   - A doua instanță se închide imediat (exit 0)
-   - Prima instanță continuă să funcționeze
+### Scenario 2: Duplicate Instance
+1. Run `imagetrust desktop` (first instance)
+2. In another terminal, run `imagetrust desktop` again
+3. **Expected:**
+   - The second instance displays A SINGLE "Already Running" dialog
+   - The second instance closes immediately (exit 0)
+   - The first instance continues to function
 
-### Scenariu 3: WebView2 Lipsă (simulare)
-1. Dezinstalează WebView2 Runtime (sau testează pe o mașină fără)
-2. Rulează `imagetrust desktop`
-3. **Așteptat:**
-   - UN SINGUR dialog "WebView2 Required"
-   - Opțiune de download (YES deschide browser)
-   - Aplicația se închide (exit 1)
-   - **NU** apar mai multe dialoguri
+### Scenario 3: Missing WebView2 (simulation)
+1. Uninstall WebView2 Runtime (or test on a machine without it)
+2. Run `imagetrust desktop`
+3. **Expected:**
+   - A SINGLE "WebView2 Required" dialog
+   - Download option (YES opens browser)
+   - The application closes (exit 1)
+   - Multiple dialogs do **NOT** appear
 
-### Scenariu 4: Port Ocupat
-1. Pornește alt server pe portul 8501: `python -m http.server 8501`
-2. Rulează `imagetrust desktop`
-3. **Așteptat:**
-   - Găsește automat alt port (8502, 8503, etc.)
-   - Funcționează normal
+### Scenario 4: Port Occupied
+1. Start another server on port 8501: `python -m http.server 8501`
+2. Run `imagetrust desktop`
+3. **Expected:**
+   - Automatically finds another port (8502, 8503, etc.)
+   - Functions normally
 
-### Scenariu 5: Streamlit Crash (simulare)
-1. Modifică temporar `cyber_app.py` pentru a da crash la import
-2. Rulează `imagetrust desktop`
-3. **Așteptat:**
-   - Face 3 încercări cu backoff
-   - UN SINGUR dialog "Server Start Failed"
-   - Nu apare spam de dialoguri
+### Scenario 5: Streamlit Crash (simulation)
+1. Temporarily modify `cyber_app.py` to crash on import
+2. Run `imagetrust desktop`
+3. **Expected:**
+   - Makes 3 attempts with backoff
+   - A SINGLE "Server Start Failed" dialog
+   - No dialog spam appears
 
-### Scenariu 6: Debug Mode
-1. Rulează `imagetrust desktop --debug`
-2. **Așteptat:**
-   - Output detaliat în consolă
-   - Fiecare pas este logat
-   - Log file conține informații complete
+### Scenario 6: Debug Mode
+1. Run `imagetrust desktop --debug`
+2. **Expected:**
+   - Detailed output in the console
+   - Each step is logged
+   - Log file contains complete information
 
 ---
 
-## Verificare Log File
+## Log File Verification
 
-### Locație Log
+### Log Location
 - **Development:** `imagetrust/outputs/cyberscout_launcher.log`
 - **Frozen (EXE):** `%TEMP%/cyberscout_launcher.log`
 
-### Exemplu Log Normal
+### Normal Log Example
 ```
 2025-01-21 15:30:00 [INFO] ======================================================================
 2025-01-21 15:30:00 [INFO] Cyber Scout Desktop Launcher v2.0.0
@@ -167,53 +167,53 @@ type %TEMP%\cyberscout_launcher.log
 
 ---
 
-## Confirmare Fix-uri
+## Fix Confirmation
 
-### ✅ NU mai există loop infinit
-- Maximum 3 încercări pentru Streamlit
-- WebView2 check face UN SINGUR pass
+### ✅ Infinite loop no longer exists
+- Maximum 3 attempts for Streamlit
+- WebView2 check makes a SINGLE pass
 
-### ✅ NU mai există popup spam
+### ✅ Popup spam no longer exists
 - Rate limit: `_dialog_shown` flag
 - Maximum 1 dialog per run
 
-### ✅ NU mai există OOM
-- Cleanup corect al proceselor
-- `taskkill /F /T` pentru Windows
-- Timeout-uri la fiecare operație
+### ✅ OOM no longer exists
+- Proper process cleanup
+- `taskkill /F /T` for Windows
+- Timeouts on each operation
 
 ---
 
-## Fișiere Modificate
+## Modified Files
 
-| Fișier | Modificări |
-|--------|------------|
-| `src/imagetrust/frontend/desktop_launcher.py` | Rescris complet v2.0.0 |
-| `src/imagetrust/cli.py` | Adăugat `--debug` și `--port` pentru desktop command |
-| `CyberScout.spec` | Module adiționale, comentarii, icon support |
+| File | Changes |
+|------|---------|
+| `src/imagetrust/frontend/desktop_launcher.py` | Completely rewritten v2.0.0 |
+| `src/imagetrust/cli.py` | Added `--debug` and `--port` for desktop command |
+| `CyberScout.spec` | Additional modules, comments, icon support |
 
 ---
 
 ## Troubleshooting
 
-### "WebView2 Required" dar e instalat
-1. Verifică versiunea WebView2: `reg query "HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"`
-2. Reinstalează WebView2 Evergreen: https://developer.microsoft.com/microsoft-edge/webview2/
+### "WebView2 Required" but it is installed
+1. Check WebView2 version: `reg query "HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"`
+2. Reinstall WebView2 Evergreen: https://developer.microsoft.com/microsoft-edge/webview2/
 
-### "Server Start Failed" după 3 încercări
-1. Verifică log-ul pentru erori specifice
-2. Testează Streamlit separat: `python -m imagetrust cyber`
-3. Verifică dacă portul e liber: `netstat -ano | findstr 8501`
+### "Server Start Failed" after 3 attempts
+1. Check the log for specific errors
+2. Test Streamlit separately: `python -m imagetrust cyber`
+3. Check if the port is free: `netstat -ano | findstr 8501`
 
-### Fereastra nu se deschide
-1. Rulează cu `--debug` pentru mai multe detalii
-2. Verifică `%TEMP%\cyberscout_launcher.log`
-3. Încearcă să rulezi ca Administrator
+### Window does not open
+1. Run with `--debug` for more details
+2. Check `%TEMP%\cyberscout_launcher.log`
+3. Try running as Administrator
 
-### Lock file blocat (după crash)
-1. Șterge manual: `del %TEMP%\cyberscout_desktop.lock`
-2. Închide toate procesele python: `taskkill /F /IM python.exe`
+### Lock file stuck (after crash)
+1. Delete manually: `del %TEMP%\cyberscout_desktop.lock`
+2. Close all python processes: `taskkill /F /IM python.exe`
 
 ---
 
-*Document actualizat pentru Cyber Scout Desktop v2.0.0*
+*Document updated for Cyber Scout Desktop v2.0.0*

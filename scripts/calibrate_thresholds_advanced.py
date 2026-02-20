@@ -2,27 +2,27 @@
 """
 Advanced Threshold Calibration System - Academic-Grade Implementation
 
-Acest script implementează un sistem COMPLET de calibrare pentru metode forensic,
-cu validare statistică riguroasă pentru teză de master.
+This script implements a COMPLETE calibration system for forensic methods,
+with rigorous statistical validation for the master's thesis.
 
-Caracteristici avansate:
-1. K-Fold Cross-Validation cu stratificare
-2. Teste statistice de semnificație (McNemar, Wilcoxon, DeLong)
-3. Reliability Diagrams (curbe de calibrare)
-4. Expected Calibration Error (ECE) și Maximum Calibration Error (MCE)
-5. Temperature Scaling pentru calibrare probabilități
-6. Isotonic Regression pentru calibrare non-parametrică
-7. Platt Scaling (calibrare sigmoidal)
-8. Bootstrap Confidence Intervals cu BCa (bias-corrected accelerated)
-9. ROC și Precision-Recall curve plotting
-10. Analiza varianței între folduri
-11. Comparație statistică între metode
-12. Holdout validation separată
+Advanced features:
+1. K-Fold Cross-Validation with stratification
+2. Statistical significance tests (McNemar, Wilcoxon, DeLong)
+3. Reliability Diagrams (calibration curves)
+4. Expected Calibration Error (ECE) and Maximum Calibration Error (MCE)
+5. Temperature Scaling for probability calibration
+6. Isotonic Regression for non-parametric calibration
+7. Platt Scaling (sigmoidal calibration)
+8. Bootstrap Confidence Intervals with BCa (bias-corrected accelerated)
+9. ROC and Precision-Recall curve plotting
+10. Variance analysis between folds
+11. Statistical comparison between methods
+12. Separate holdout validation
 13. Cost-sensitive threshold selection
 14. Ensemble threshold optimization
-15. Rapoarte LaTeX complete pentru teză
+15. Complete LaTeX reports for the thesis
 
-Cerință profesor: "Demonstrează experimental fiecare threshold!"
+Professor requirement: "Demonstrate each threshold experimentally!"
 
 Usage:
     python scripts/calibrate_thresholds_advanced.py --dataset data/calibration --output outputs/calibration
@@ -64,22 +64,22 @@ logger = logging.getLogger(__name__)
 
 
 class ThresholdMethod(Enum):
-    """Metode de selecție threshold."""
-    YOUDEN = "youden"              # Maximizează TPR - FPR (Youden's J)
-    F1_MAX = "f1_max"              # Maximizează F1 score
-    F2_MAX = "f2_max"              # Maximizează F2 (favorizează recall)
-    F05_MAX = "f05_max"            # Maximizează F0.5 (favorizează precision)
-    PRECISION_TARGET = "precision_target"  # Atinge precision țintă
-    RECALL_TARGET = "recall_target"        # Atinge recall țintă
-    COST_SENSITIVE = "cost_sensitive"      # Minimizează cost ponderat
-    GMEAN = "gmean"                # Maximizează geometric mean
-    MCC_MAX = "mcc_max"            # Maximizează Matthews Correlation Coefficient
-    BALANCED_ACCURACY = "balanced_accuracy"  # Maximizează balanced accuracy
+    """Threshold selection methods."""
+    YOUDEN = "youden"              # Maximizes TPR - FPR (Youden's J)
+    F1_MAX = "f1_max"              # Maximizes F1 score
+    F2_MAX = "f2_max"              # Maximizes F2 (favors recall)
+    F05_MAX = "f05_max"            # Maximizes F0.5 (favors precision)
+    PRECISION_TARGET = "precision_target"  # Reaches target precision
+    RECALL_TARGET = "recall_target"        # Reaches target recall
+    COST_SENSITIVE = "cost_sensitive"      # Minimizes weighted cost
+    GMEAN = "gmean"                # Maximizes geometric mean
+    MCC_MAX = "mcc_max"            # Maximizes Matthews Correlation Coefficient
+    BALANCED_ACCURACY = "balanced_accuracy"  # Maximizes balanced accuracy
     EQUAL_ERROR_RATE = "eer"       # Equal Error Rate (FPR = FNR)
 
 
 class CalibrationMethod(Enum):
-    """Metode de calibrare probabilități."""
+    """Probability calibration methods."""
     NONE = "none"
     TEMPERATURE_SCALING = "temperature"
     PLATT_SCALING = "platt"
@@ -88,9 +88,9 @@ class CalibrationMethod(Enum):
     HISTOGRAM_BINNING = "histogram"
 
 
-# Costuri implicite pentru erori (pot fi ajustate)
-DEFAULT_FP_COST = 1.0  # Costul unui False Positive
-DEFAULT_FN_COST = 2.0  # Costul unui False Negative (de obicei mai mare)
+# Default error costs (can be adjusted)
+DEFAULT_FP_COST = 1.0  # Cost of a False Positive
+DEFAULT_FN_COST = 2.0  # Cost of a False Negative (usually higher)
 
 
 # =============================================================================
@@ -100,7 +100,7 @@ DEFAULT_FN_COST = 2.0  # Costul unui False Negative (de obicei mai mare)
 
 @dataclass
 class CrossValidationResult:
-    """Rezultat pentru un singur fold de cross-validation."""
+    """Result for a single cross-validation fold."""
     fold_idx: int
     threshold: float
     train_metrics: Dict[str, float]
@@ -111,11 +111,11 @@ class CrossValidationResult:
 
 @dataclass
 class StatisticalTestResult:
-    """Rezultatul unui test statistic."""
+    """Result of a statistical test."""
     test_name: str
     statistic: float
     p_value: float
-    is_significant: bool  # La alpha = 0.05
+    is_significant: bool  # At alpha = 0.05
     effect_size: Optional[float] = None
     confidence_interval: Optional[Tuple[float, float]] = None
     interpretation: str = ""
@@ -123,19 +123,19 @@ class StatisticalTestResult:
 
 @dataclass
 class CalibrationMetrics:
-    """Metrici de calibrare a probabilităților."""
+    """Probability calibration metrics."""
     ece: float  # Expected Calibration Error
     mce: float  # Maximum Calibration Error
     brier_score: float
     log_loss: float
-    reliability_data: Dict[str, Any]  # Pentru plotare
+    reliability_data: Dict[str, Any]  # For plotting
     calibration_method: str
-    temperature: Optional[float] = None  # Pentru temperature scaling
+    temperature: Optional[float] = None  # For temperature scaling
 
 
 @dataclass
 class AdvancedCalibrationResult:
-    """Rezultat complet de calibrare pentru o metodă."""
+    """Complete calibration result for a method."""
 
     # Identificare
     method_name: str
@@ -153,36 +153,36 @@ class AdvancedCalibrationResult:
     cv_threshold_std: float
     cv_metrics: Dict[str, List[float]]  # {metric_name: [fold1, fold2, ...]}
 
-    # Metrici principale (pe threshold optimal)
+    # Main metrics (at optimal threshold)
     metrics: Dict[str, float]  # accuracy, precision, recall, f1, auc, mcc, etc.
 
-    # Calibrare probabilități
+    # Probability calibration
     calibration: Optional[CalibrationMetrics] = None
 
-    # Comparații cu alte metode
+    # Comparisons with other methods
     statistical_comparisons: Dict[str, StatisticalTestResult] = field(default_factory=dict)
 
-    # Metadate
+    # Metadata
     n_samples: int = 0
     n_positive: int = 0
     n_negative: int = 0
     dataset_name: str = ""
     calibration_date: str = ""
 
-    # Referințe literatură
+    # Literature references
     literature_threshold: Optional[float] = None
     literature_source: Optional[str] = None
     literature_refs: List[Dict[str, str]] = field(default_factory=list)
 
-    # Alternative thresholds pentru diferite scenarii
+    # Alternative thresholds for different scenarios
     alternative_thresholds: Dict[str, float] = field(default_factory=dict)
 
-    # Note și observații
+    # Notes and observations
     notes: str = ""
     warnings: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
-        """Conversie la dicționar pentru serializare."""
+        """Convert to dictionary for serialization."""
         return {
             "method_name": self.method_name,
             "method_key": self.method_key,
@@ -223,7 +223,7 @@ class AdvancedCalibrationResult:
         }
 
     def to_latex_row(self) -> str:
-        """Generează rând pentru tabel LaTeX."""
+        """Generate row for LaTeX table."""
         ci = f"[{self.confidence_interval_95[0]:.2f}, {self.confidence_interval_95[1]:.2f}]"
         cv_std = f"±{self.cv_threshold_std:.2f}" if self.cv_threshold_std > 0 else ""
         lit = f"{self.literature_threshold:.2f}" if self.literature_threshold else "N/A"
@@ -251,7 +251,7 @@ class AdvancedCalibrationResult:
 
 @dataclass
 class MethodConfig:
-    """Configurație pentru o metodă forensic."""
+    """Configuration for a forensic method."""
     name: str
     key: str
     description: str
@@ -264,7 +264,7 @@ class MethodConfig:
 
 
 # =============================================================================
-# METRICI ȘI FUNCȚII STATISTICE
+# METRICS AND STATISTICAL FUNCTIONS
 # =============================================================================
 
 
@@ -274,15 +274,15 @@ def compute_all_metrics(
     y_prob: np.ndarray
 ) -> Dict[str, float]:
     """
-    Calculează toate metricile relevante.
+    Compute all relevant metrics.
 
     Args:
-        y_true: Etichete reale (0/1)
-        y_pred: Predicții binare (0/1)
-        y_prob: Probabilități/score-uri continue
+        y_true: Ground truth labels (0/1)
+        y_pred: Binary predictions (0/1)
+        y_prob: Continuous probabilities/scores
 
     Returns:
-        Dict cu toate metricile
+        Dict with all metrics
     """
     from sklearn.metrics import (
         accuracy_score, precision_score, recall_score, f1_score,
@@ -293,7 +293,7 @@ def compute_all_metrics(
 
     metrics = {}
 
-    # Metrici de clasificare
+    # Classification metrics
     metrics["accuracy"] = accuracy_score(y_true, y_pred)
     metrics["balanced_accuracy"] = balanced_accuracy_score(y_true, y_pred)
     metrics["precision"] = precision_score(y_true, y_pred, zero_division=0)
@@ -305,7 +305,7 @@ def compute_all_metrics(
     metrics["mcc"] = matthews_corrcoef(y_true, y_pred)
     metrics["kappa"] = cohen_kappa_score(y_true, y_pred)
 
-    # Metrici bazate pe probabilități
+    # Probability-based metrics
     try:
         metrics["auc"] = roc_auc_score(y_true, y_prob)
     except ValueError:
@@ -321,7 +321,7 @@ def compute_all_metrics(
     metrics["brier_score"] = brier_score_loss(y_true, y_prob_clamped)
     metrics["log_loss"] = log_loss(y_true, y_prob_clamped)
 
-    # Confusion matrix derivate
+    # Confusion matrix derived metrics
     tn, fp, fn, tp = confusion_matrix(y_true, y_pred, labels=[0, 1]).ravel()
     metrics["true_positives"] = int(tp)
     metrics["true_negatives"] = int(tn)
@@ -340,7 +340,7 @@ def compute_all_metrics(
 
 
 def fbeta_score(y_true: np.ndarray, y_pred: np.ndarray, beta: float) -> float:
-    """Calculează F-beta score."""
+    """Compute F-beta score."""
     from sklearn.metrics import precision_score, recall_score
 
     precision = precision_score(y_true, y_pred, zero_division=0)
@@ -359,17 +359,17 @@ def compute_ece(
     n_bins: int = 15
 ) -> Tuple[float, float, Dict]:
     """
-    Calculează Expected Calibration Error și Maximum Calibration Error.
+    Compute Expected Calibration Error and Maximum Calibration Error.
 
     ECE = Σ (|B_m| / n) * |accuracy(B_m) - confidence(B_m)|
 
     Args:
-        y_true: Etichete reale
-        y_prob: Probabilități prezise
-        n_bins: Număr de bins
+        y_true: Ground truth labels
+        y_prob: Predicted probabilities
+        n_bins: Number of bins
 
     Returns:
-        (ECE, MCE, reliability_data pentru plotare)
+        (ECE, MCE, reliability_data for plotting)
     """
     bin_boundaries = np.linspace(0, 1, n_bins + 1)
     bin_lowers = bin_boundaries[:-1]
@@ -413,17 +413,17 @@ def temperature_scaling(
     init_temp: float = 1.5
 ) -> Tuple[float, np.ndarray]:
     """
-    Aplică Temperature Scaling pentru calibrare.
+    Apply Temperature Scaling for calibration.
 
-    Găsește temperatura optimă care minimizează NLL pe validation set.
+    Finds the optimal temperature that minimizes NLL on the validation set.
 
     Args:
-        logits: Log-odds sau probabilități (vor fi convertite)
-        y_true: Etichete reale
-        init_temp: Temperatura inițială
+        logits: Log-odds or probabilities (will be converted)
+        y_true: Ground truth labels
+        init_temp: Initial temperature
 
     Returns:
-        (temperatura optimă, probabilități calibrate)
+        (optimal temperature, calibrated probabilities)
     """
     from scipy.optimize import minimize_scalar
     from scipy.special import expit  # sigmoid
@@ -435,7 +435,7 @@ def temperature_scaling(
         logits = np.log(probs / (1 - probs))
 
     def nll_with_temperature(T):
-        """Negative log likelihood cu temperatura dată."""
+        """Negative log likelihood with the given temperature."""
         scaled_probs = expit(logits / T)
         scaled_probs = np.clip(scaled_probs, 1e-7, 1 - 1e-7)
         nll = -np.mean(
@@ -444,7 +444,7 @@ def temperature_scaling(
         )
         return nll
 
-    # Optimizare temperatura
+    # Optimize temperature
     result = minimize_scalar(
         nll_with_temperature,
         bounds=(0.1, 10.0),
@@ -462,16 +462,16 @@ def platt_scaling(
     y_true: np.ndarray
 ) -> Tuple[Tuple[float, float], np.ndarray]:
     """
-    Aplică Platt Scaling (logistic regression pe scores).
+    Apply Platt Scaling (logistic regression on scores).
 
     P(y=1|s) = 1 / (1 + exp(A*s + B))
 
     Args:
-        scores: Score-uri de la model
-        y_true: Etichete reale
+        scores: Scores from the model
+        y_true: Ground truth labels
 
     Returns:
-        ((A, B), probabilități calibrate)
+        ((A, B), calibrated probabilities)
     """
     from sklearn.linear_model import LogisticRegression
 
@@ -492,14 +492,14 @@ def isotonic_calibration(
     y_true: np.ndarray
 ) -> np.ndarray:
     """
-    Aplică Isotonic Regression pentru calibrare non-parametrică.
+    Apply Isotonic Regression for non-parametric calibration.
 
     Args:
-        scores: Score-uri de la model
-        y_true: Etichete reale
+        scores: Scores from the model
+        y_true: Ground truth labels
 
     Returns:
-        Probabilități calibrate
+        Calibrated probabilities
     """
     from sklearn.isotonic import IsotonicRegression
 
@@ -521,9 +521,9 @@ def mcnemar_test(
     preds_b: np.ndarray
 ) -> StatisticalTestResult:
     """
-    McNemar's test pentru compararea a două clasificatoare pe același dataset.
+    McNemar's test for comparing two classifiers on the same dataset.
 
-    Testează dacă diferența dintre clasificatoare este semnificativă statistic.
+    Tests whether the difference between classifiers is statistically significant.
     """
     from scipy.stats import chi2
 
@@ -537,7 +537,7 @@ def mcnemar_test(
     # both wrong
     both_wrong = np.sum((preds_a != y_true) & (preds_b != y_true))
 
-    # McNemar statistic (cu corecție de continuitate)
+    # McNemar statistic (with continuity correction)
     b = a_correct_b_wrong
     c = a_wrong_b_correct
 
@@ -547,7 +547,7 @@ def mcnemar_test(
             statistic=0,
             p_value=1.0,
             is_significant=False,
-            interpretation="Nu există diferențe în predicții între metode."
+            interpretation="No differences in predictions between methods."
         )
 
     statistic = (abs(b - c) - 1) ** 2 / (b + c)
@@ -560,9 +560,9 @@ def mcnemar_test(
         is_significant=p_value < 0.05,
         effect_size=abs(b - c) / (b + c) if (b + c) > 0 else 0,
         interpretation=(
-            f"Diferența este {'semnificativă' if p_value < 0.05 else 'nesemnificativă'} "
-            f"statistic (p={p_value:.4f}). "
-            f"Discordanțe: A corect/B greșit={b}, A greșit/B corect={c}."
+            f"The difference is {'significant' if p_value < 0.05 else 'not significant'} "
+            f"statistically (p={p_value:.4f}). "
+            f"Discordances: A correct/B wrong={b}, A wrong/B correct={c}."
         )
     )
 
@@ -573,9 +573,9 @@ def delong_test(
     probs_b: np.ndarray
 ) -> StatisticalTestResult:
     """
-    DeLong's test pentru compararea AUC-urilor a două modele.
+    DeLong's test for comparing AUCs of two models.
 
-    Implementare simplificată bazată pe varianta asimptotică.
+    Simplified implementation based on asymptotic variance.
     """
     from scipy.stats import norm
 
@@ -591,7 +591,7 @@ def delong_test(
             statistic=0,
             p_value=1.0,
             is_significant=False,
-            interpretation="Nu s-a putut calcula AUC pentru unul dintre modele."
+            interpretation="Could not compute AUC for one of the models."
         )
 
     # Variance estimation (simplified)
@@ -633,8 +633,8 @@ def delong_test(
             (auc_a - auc_b) + 1.96 * se_diff
         ),
         interpretation=(
-            f"AUC_A={auc_a:.4f}, AUC_B={auc_b:.4f}, Diferență={auc_a-auc_b:.4f}. "
-            f"Diferența {'este' if p_value < 0.05 else 'nu este'} semnificativă "
+            f"AUC_A={auc_a:.4f}, AUC_B={auc_b:.4f}, Difference={auc_a-auc_b:.4f}. "
+            f"The difference {'is' if p_value < 0.05 else 'is not'} significant "
             f"(z={z_stat:.2f}, p={p_value:.4f})."
         )
     )
@@ -645,9 +645,9 @@ def wilcoxon_signed_rank_test(
     metrics_b: List[float]
 ) -> StatisticalTestResult:
     """
-    Wilcoxon signed-rank test pentru compararea performanței pe folds.
+    Wilcoxon signed-rank test for comparing performance across folds.
 
-    Util pentru compararea metricilor obținute în cross-validation.
+    Useful for comparing metrics obtained in cross-validation.
     """
     from scipy.stats import wilcoxon
 
@@ -657,7 +657,7 @@ def wilcoxon_signed_rank_test(
             statistic=0,
             p_value=1.0,
             is_significant=False,
-            interpretation="Prea puține date pentru testul Wilcoxon."
+            interpretation="Too few data points for the Wilcoxon test."
         )
 
     try:
@@ -668,7 +668,7 @@ def wilcoxon_signed_rank_test(
             statistic=0,
             p_value=1.0,
             is_significant=False,
-            interpretation="Diferențe nule sau insuficiente pentru testul Wilcoxon."
+            interpretation="Zero or insufficient differences for the Wilcoxon test."
         )
 
     mean_diff = np.mean(np.array(metrics_a) - np.array(metrics_b))
@@ -680,8 +680,8 @@ def wilcoxon_signed_rank_test(
         is_significant=p_value < 0.05,
         effect_size=mean_diff,
         interpretation=(
-            f"Diferență medie={mean_diff:.4f}. "
-            f"Diferența {'este' if p_value < 0.05 else 'nu este'} semnificativă "
+            f"Mean difference={mean_diff:.4f}. "
+            f"The difference {'is' if p_value < 0.05 else 'is not'} significant "
             f"(W={statistic:.2f}, p={p_value:.4f})."
         )
     )
@@ -697,7 +697,7 @@ def bootstrap_ci_bca(
     """
     Bootstrap BCa (Bias-Corrected and Accelerated) confidence interval.
 
-    Mai robust decât percentile bootstrap simplu.
+    More robust than simple percentile bootstrap.
     """
     np.random.seed(random_state)
 
@@ -765,7 +765,7 @@ def norm_cdf(x: float) -> float:
 
 
 def find_threshold_youden(labels: np.ndarray, scores: np.ndarray) -> Tuple[float, Dict]:
-    """Youden's J statistic: maximizează TPR - FPR."""
+    """Youden's J statistic: maximizes TPR - FPR."""
     from sklearn.metrics import roc_curve
 
     fpr, tpr, thresholds = roc_curve(labels, scores)
@@ -781,7 +781,7 @@ def find_threshold_youden(labels: np.ndarray, scores: np.ndarray) -> Tuple[float
 
 
 def find_threshold_f1_max(labels: np.ndarray, scores: np.ndarray) -> Tuple[float, Dict]:
-    """Maximizează F1 score."""
+    """Maximizes F1 score."""
     from sklearn.metrics import f1_score
 
     thresholds = np.arange(0.01, 0.99, 0.01)
@@ -803,7 +803,7 @@ def find_threshold_fbeta_max(
     scores: np.ndarray,
     beta: float = 1.0
 ) -> Tuple[float, Dict]:
-    """Maximizează F-beta score."""
+    """Maximizes F-beta score."""
     thresholds = np.arange(0.01, 0.99, 0.01)
     best_threshold = 0.5
     best_fbeta = 0.0
@@ -819,7 +819,7 @@ def find_threshold_fbeta_max(
 
 
 def find_threshold_mcc_max(labels: np.ndarray, scores: np.ndarray) -> Tuple[float, Dict]:
-    """Maximizează Matthews Correlation Coefficient."""
+    """Maximizes Matthews Correlation Coefficient."""
     from sklearn.metrics import matthews_corrcoef
 
     thresholds = np.arange(0.01, 0.99, 0.01)
@@ -837,7 +837,7 @@ def find_threshold_mcc_max(labels: np.ndarray, scores: np.ndarray) -> Tuple[floa
 
 
 def find_threshold_gmean(labels: np.ndarray, scores: np.ndarray) -> Tuple[float, Dict]:
-    """Maximizează Geometric Mean (sqrt(TPR * TNR))."""
+    """Maximizes Geometric Mean (sqrt(TPR * TNR))."""
     from sklearn.metrics import roc_curve
 
     fpr, tpr, thresholds = roc_curve(labels, scores)
@@ -879,7 +879,7 @@ def find_threshold_cost_sensitive(
     fn_cost: float = DEFAULT_FN_COST
 ) -> Tuple[float, Dict]:
     """
-    Minimizează costul total ponderat.
+    Minimizes total weighted cost.
 
     Cost = FP * fp_cost + FN * fn_cost
     """
@@ -910,7 +910,7 @@ def find_threshold_precision_target(
     scores: np.ndarray,
     target: float = 0.95
 ) -> Tuple[float, Dict]:
-    """Găsește threshold pentru precision țintă."""
+    """Find threshold for target precision."""
     from sklearn.metrics import precision_recall_curve
 
     precision, recall, thresholds = precision_recall_curve(labels, scores)
@@ -937,7 +937,7 @@ def find_threshold_recall_target(
     scores: np.ndarray,
     target: float = 0.90
 ) -> Tuple[float, Dict]:
-    """Găsește threshold pentru recall țintă."""
+    """Find threshold for target recall."""
     from sklearn.metrics import precision_recall_curve
 
     precision, recall, thresholds = precision_recall_curve(labels, scores)
@@ -968,7 +968,7 @@ def compute_ela_score(image_path: Path, quality: int = 95) -> float:
     """
     Error Level Analysis score.
 
-    Referințe:
+    References:
     - Krawetz (2007): "A Picture's Worth..."
     - Gunawan et al. (2017): IJECE
     """
@@ -990,13 +990,13 @@ def compute_ela_score(image_path: Path, quality: int = 95) -> float:
         std_error = np.std(error_normalized)
         max_error = np.max(error_normalized)
 
-        # Calculăm și entropia distribuției erorilor
+        # Also compute the entropy of the error distribution
         hist, _ = np.histogram(error_normalized.flatten(), bins=50, range=(0, 1))
         hist = hist / np.sum(hist) + 1e-10
         entropy = -np.sum(hist * np.log2(hist))
-        entropy_normalized = entropy / np.log2(50)  # Normalizat
+        entropy_normalized = entropy / np.log2(50)  # Normalized
 
-        # Score compozit
+        # Composite score
         score = (
             0.30 * mean_error * 10 +      # Mean scaled
             0.30 * std_error * 10 +        # Variance matters
@@ -1015,7 +1015,7 @@ def compute_noise_score(image_path: Path, block_size: int = 32) -> float:
     """
     Noise inconsistency analysis.
 
-    Referințe:
+    References:
     - Mahdian & Saic (2009): Image and Vision Computing
     - Pan et al. (2011): IEEE TIFS
     """
@@ -1053,16 +1053,16 @@ def compute_noise_score(image_path: Path, block_size: int = 32) -> float:
         variances_lap = np.array(variances_lap)
         variances_hp = np.array(variances_hp)
 
-        # Coefficient of variation pentru ambele
+        # Coefficient of variation for both
         cv_lap = np.std(variances_lap) / (np.mean(variances_lap) + 1e-6)
         cv_hp = np.std(variances_hp) / (np.mean(variances_hp) + 1e-6)
 
-        # Kurtosis - distribuție anormală indică manipulare
+        # Kurtosis - abnormal distribution indicates manipulation
         from scipy.stats import kurtosis
         kurt_lap = abs(kurtosis(variances_lap))
         kurt_hp = abs(kurtosis(variances_hp))
 
-        # Score compozit
+        # Composite score
         score = (
             0.35 * np.clip(cv_lap / 1.5, 0, 1) +
             0.35 * np.clip(cv_hp / 1.5, 0, 1) +
@@ -1081,7 +1081,7 @@ def compute_jpeg_score(image_path: Path) -> float:
     """
     Double JPEG compression detection.
 
-    Referințe:
+    References:
     - Farid (2009): IEEE TIFS
     - Bianchi & Piva (2012): IEEE TIFS
     """
@@ -1113,11 +1113,11 @@ def compute_jpeg_score(image_path: Path) -> float:
         hist = hist.astype(np.float32)
         hist = hist / (np.sum(hist) + 1e-6)
 
-        # FFT pentru detectarea periodicității
+        # FFT for periodicity detection
         fft_hist = np.abs(np.fft.fft(hist))
         fft_hist = fft_hist[1:len(fft_hist)//2]
 
-        # Detectare peak-uri periodice
+        # Detect periodic peaks
         mean_fft = np.mean(fft_hist)
         std_fft = np.std(fft_hist)
         peaks = fft_hist > mean_fft + 2 * std_fft
@@ -1130,7 +1130,7 @@ def compute_jpeg_score(image_path: Path) -> float:
             periodicity = (np.max(fft_hist) / mean_fft - 1) / 10
 
         # Blocking artifacts analysis
-        # La granițele de 8 pixeli
+        # At 8-pixel boundaries
         h_diff = np.abs(np.diff(arr[::8, :], axis=0))
         v_diff = np.abs(np.diff(arr[:, ::8], axis=1))
 
@@ -1223,7 +1223,7 @@ def compute_ai_frequency_score(image_path: Path) -> float:
     """
     AI detection via frequency analysis.
 
-    Referințe:
+    References:
     - Wang et al. (2020): CVPR - "CNN-generated images..."
     - Frank et al. (2020): "Leveraging Frequency Analysis"
     """
@@ -1382,7 +1382,7 @@ def compute_texture_score(image_path: Path) -> float:
 
 class AdvancedCalibrationEngine:
     """
-    Motor de calibrare avansat cu validare statistică completă.
+    Advanced calibration engine with complete statistical validation.
     """
 
     def __init__(self, output_dir: Path, random_state: int = 42):
@@ -1411,12 +1411,12 @@ class AdvancedCalibrationEngine:
         }
 
     def _init_methods(self) -> Dict[str, MethodConfig]:
-        """Inițializează configurația metodelor."""
+        """Initialize method configurations."""
         return {
             "ela": MethodConfig(
                 name="ELA (Error Level Analysis)",
                 key="ela",
-                description="Detectează manipulare prin analiza nivelurilor de eroare JPEG",
+                description="Detects manipulation through JPEG error level analysis",
                 compute_score=compute_ela_score,
                 literature_refs=[
                     {"author": "Krawetz, N.", "year": "2007",
@@ -1429,7 +1429,7 @@ class AdvancedCalibrationEngine:
             "noise": MethodConfig(
                 name="Noise Inconsistency",
                 key="noise",
-                description="Detectează splicing prin variația pattern-urilor de noise",
+                description="Detects splicing through noise pattern variation",
                 compute_score=compute_noise_score,
                 literature_refs=[
                     {"author": "Mahdian & Saic", "year": "2009",
@@ -1442,7 +1442,7 @@ class AdvancedCalibrationEngine:
             "jpeg": MethodConfig(
                 name="JPEG Double Compression",
                 key="jpeg",
-                description="Detectează re-compresii multiple JPEG via DCT",
+                description="Detects multiple JPEG re-compressions via DCT",
                 compute_score=compute_jpeg_score,
                 literature_refs=[
                     {"author": "Farid, H.", "year": "2009",
@@ -1455,7 +1455,7 @@ class AdvancedCalibrationEngine:
             "screenshot": MethodConfig(
                 name="Screenshot Detection",
                 key="screenshot",
-                description="Detectează capturi de ecran via rezoluție și metadata",
+                description="Detects screenshots via resolution and metadata",
                 compute_score=compute_screenshot_score,
                 literature_refs=[],
                 category="metadata",
@@ -1463,7 +1463,7 @@ class AdvancedCalibrationEngine:
             "ai_frequency": MethodConfig(
                 name="AI Detection (Frequency)",
                 key="ai_frequency",
-                description="Detectează imagini AI prin analiza spectrală",
+                description="Detects AI images through spectral analysis",
                 compute_score=compute_ai_frequency_score,
                 literature_refs=[
                     {"author": "Wang et al.", "year": "2020",
@@ -1476,7 +1476,7 @@ class AdvancedCalibrationEngine:
             "texture": MethodConfig(
                 name="Texture Inconsistency",
                 key="texture",
-                description="Detectează manipulare prin variația texturilor locale",
+                description="Detects manipulation through local texture variation",
                 compute_score=compute_texture_score,
                 literature_refs=[
                     {"author": "Fridrich et al.", "year": "2012",
@@ -1492,12 +1492,12 @@ class AdvancedCalibrationEngine:
         labels_file: Optional[Path] = None
     ) -> Tuple[List[Path], np.ndarray]:
         """
-        Încarcă dataset cu etichete.
+        Load dataset with labels.
 
-        Structură așteptată:
+        Expected structure:
         dataset/
-        ├── authentic/   (sau real/, original/)
-        └── manipulated/ (sau fake/, ai/, tampered/)
+        ├── authentic/   (or real/, original/)
+        └── manipulated/ (or fake/, ai/, tampered/)
         """
         images = []
         labels = []
@@ -1544,7 +1544,7 @@ class AdvancedCalibrationEngine:
         images: List[Path],
         show_progress: bool = True
     ) -> np.ndarray:
-        """Calculează score-uri pentru toate imaginile."""
+        """Compute scores for all images."""
         method = self.methods[method_key]
         scores = []
 
@@ -1631,13 +1631,13 @@ class AdvancedCalibrationEngine:
         calibrate_probabilities: bool = True,
     ) -> AdvancedCalibrationResult:
         """
-        Calibrare completă pentru o metodă cu toate analizele.
+        Full calibration for a method with all analyses.
         """
         from sklearn.metrics import roc_curve, auc
 
         method = self.methods[method_key]
         logger.info(f"\n{'='*70}")
-        logger.info(f"CALIBRARE COMPLETĂ: {method.name}")
+        logger.info(f"FULL CALIBRATION: {method.name}")
         logger.info(f"{'='*70}")
 
         # Cross-validation
@@ -1795,14 +1795,14 @@ class AdvancedCalibrationEngine:
         labels: np.ndarray,
     ):
         """
-        Compară toate metodele folosind teste statistice.
+        Compare all methods using statistical tests.
         """
         logger.info("\n" + "="*70)
-        logger.info("COMPARAȚIE STATISTICĂ ÎNTRE METODE")
+        logger.info("STATISTICAL COMPARISON BETWEEN METHODS")
         logger.info("="*70)
 
         if len(self.results) < 2:
-            logger.warning("Prea puține metode pentru comparație.")
+            logger.warning("Too few methods for comparison.")
             return
 
         method_keys = list(self.results.keys())
@@ -1850,7 +1850,7 @@ class AdvancedCalibrationEngine:
         k_folds: int = 5,
         statistical_comparison: bool = True,
     ):
-        """Calibrează toate metodele."""
+        """Calibrate all methods."""
         for method_key in self.methods:
             self.calibrate_method_full(
                 method_key, images, labels, dataset_name, k_folds
@@ -1860,7 +1860,7 @@ class AdvancedCalibrationEngine:
             self.compare_methods_statistically(images, labels)
 
     def generate_reliability_diagram_data(self) -> Dict[str, Any]:
-        """Generează date pentru reliability diagrams."""
+        """Generate data for reliability diagrams."""
         data = {}
 
         for key, result in self.results.items():
@@ -1875,18 +1875,18 @@ class AdvancedCalibrationEngine:
         return data
 
     def generate_comprehensive_report(self) -> str:
-        """Generează raport Markdown complet pentru teză."""
+        """Generate comprehensive Markdown report for the thesis."""
         report = []
 
-        report.append("# Raport Complet de Calibrare a Threshold-urilor")
-        report.append(f"\n**Data generare:** {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+        report.append("# Complete Threshold Calibration Report")
+        report.append(f"\n**Generation date:** {datetime.now().strftime('%Y-%m-%d %H:%M')}")
         report.append(f"**Random seed:** {self.random_state}")
         report.append("")
 
         # Executive Summary
-        report.append("## 1. Sumar Executiv")
+        report.append("## 1. Executive Summary")
         report.append("")
-        report.append("| Metodă | Threshold | 95% CI | AUC | F1 | MCC | ECE |")
+        report.append("| Method | Threshold | 95% CI | AUC | F1 | MCC | ECE |")
         report.append("|--------|-----------|--------|-----|----|----|-----|")
 
         for key, result in self.results.items():
@@ -1904,7 +1904,7 @@ class AdvancedCalibrationEngine:
         report.append("")
 
         # Detailed per-method sections
-        report.append("## 2. Analiză Detaliată pe Metodă")
+        report.append("## 2. Detailed Per-Method Analysis")
         report.append("")
 
         for key, result in self.results.items():
@@ -1912,21 +1912,21 @@ class AdvancedCalibrationEngine:
 
             report.append(f"### 2.{list(self.results.keys()).index(key) + 1} {result.method_name}")
             report.append("")
-            report.append(f"**Descriere:** {method.description}")
-            report.append(f"**Categorie:** {method.category}")
+            report.append(f"**Description:** {method.description}")
+            report.append(f"**Category:** {method.category}")
             report.append("")
 
             # Literature references
             if method.literature_refs:
-                report.append("#### Referințe Bibliografice")
+                report.append("#### Bibliographic References")
                 for ref in method.literature_refs:
                     report.append(f"- {ref['author']} ({ref['year']}): \"{ref['title']}\", {ref['venue']}")
                 report.append("")
 
             # Threshold details
-            report.append("#### Threshold Optim")
-            report.append(f"- **Valoare:** {result.threshold_optimal:.4f}")
-            report.append(f"- **Metodă selecție:** {result.threshold_method}")
+            report.append("#### Optimal Threshold")
+            report.append(f"- **Value:** {result.threshold_optimal:.4f}")
+            report.append(f"- **Selection method:** {result.threshold_method}")
             report.append(f"- **95% CI:** [{result.confidence_interval_95[0]:.3f}, {result.confidence_interval_95[1]:.3f}]")
             report.append(f"- **99% CI:** [{result.confidence_interval_99[0]:.3f}, {result.confidence_interval_99[1]:.3f}]")
             report.append("")
@@ -1939,7 +1939,7 @@ class AdvancedCalibrationEngine:
             report.append("")
 
             # Metrics
-            report.append("#### Metrici de Performanță")
+            report.append("#### Performance Metrics")
             report.append(f"- **Accuracy:** {result.metrics.get('accuracy', 0):.4f}")
             report.append(f"- **Precision:** {result.metrics.get('precision', 0):.4f}")
             report.append(f"- **Recall:** {result.metrics.get('recall', 0):.4f}")
@@ -1952,10 +1952,10 @@ class AdvancedCalibrationEngine:
 
             # Calibration
             if result.calibration:
-                report.append("#### Calibrare Probabilități")
-                report.append(f"- **Metodă:** {result.calibration.calibration_method}")
+                report.append("#### Probability Calibration")
+                report.append(f"- **Method:** {result.calibration.calibration_method}")
                 if result.calibration.temperature:
-                    report.append(f"- **Temperatură:** {result.calibration.temperature:.4f}")
+                    report.append(f"- **Temperature:** {result.calibration.temperature:.4f}")
                 report.append(f"- **ECE:** {result.calibration.ece:.4f}")
                 report.append(f"- **MCE:** {result.calibration.mce:.4f}")
                 report.append(f"- **Brier Score:** {result.calibration.brier_score:.4f}")
@@ -1963,8 +1963,8 @@ class AdvancedCalibrationEngine:
 
             # Alternative thresholds
             if result.alternative_thresholds:
-                report.append("#### Threshold-uri Alternative")
-                report.append("| Metodă | Threshold |")
+                report.append("#### Alternative Thresholds")
+                report.append("| Method | Threshold |")
                 report.append("|--------|-----------|")
                 for method_name, thresh in result.alternative_thresholds.items():
                     report.append(f"| {method_name} | {thresh:.4f} |")
@@ -1972,7 +1972,7 @@ class AdvancedCalibrationEngine:
 
             # Statistical comparisons
             if result.statistical_comparisons:
-                report.append("#### Comparații Statistice")
+                report.append("#### Statistical Comparisons")
                 for comp_name, comp_result in result.statistical_comparisons.items():
                     report.append(f"- **{comp_name}:** {comp_result.interpretation}")
                 report.append("")
@@ -1981,45 +1981,45 @@ class AdvancedCalibrationEngine:
             report.append("")
 
         # Methodology section
-        report.append("## 3. Metodologie")
+        report.append("## 3. Methodology")
         report.append("")
-        report.append("### 3.1 Selecția Threshold-ului")
-        report.append("S-au evaluat următoarele metode de selecție:")
-        report.append("- **Youden's J:** Maximizează TPR - FPR")
-        report.append("- **F1 Max:** Maximizează F1 score")
-        report.append("- **F2 Max:** Favorizează recall")
-        report.append("- **MCC Max:** Maximizează Matthews Correlation Coefficient")
-        report.append("- **G-Mean:** Maximizează √(TPR × TNR)")
+        report.append("### 3.1 Threshold Selection")
+        report.append("The following selection methods were evaluated:")
+        report.append("- **Youden's J:** Maximizes TPR - FPR")
+        report.append("- **F1 Max:** Maximizes F1 score")
+        report.append("- **F2 Max:** Favors recall")
+        report.append("- **MCC Max:** Maximizes Matthews Correlation Coefficient")
+        report.append("- **G-Mean:** Maximizes √(TPR × TNR)")
         report.append("- **EER:** Equal Error Rate (FPR = FNR)")
-        report.append("- **Cost-Sensitive:** Minimizează costul ponderat al erorilor")
+        report.append("- **Cost-Sensitive:** Minimizes weighted error cost")
         report.append("")
 
-        report.append("### 3.2 Validare Statistică")
+        report.append("### 3.2 Statistical Validation")
         report.append("- **Cross-validation:** Stratified K-Fold")
         report.append("- **Confidence Intervals:** Bootstrap BCa (bias-corrected accelerated)")
-        report.append("- **Comparații:** McNemar test, DeLong test, Wilcoxon signed-rank")
+        report.append("- **Comparisons:** McNemar test, DeLong test, Wilcoxon signed-rank")
         report.append("")
 
-        report.append("### 3.3 Calibrarea Probabilităților")
-        report.append("- **Temperature Scaling:** Optimizare NLL")
-        report.append("- **Metrici:** ECE, MCE, Brier Score")
+        report.append("### 3.3 Probability Calibration")
+        report.append("- **Temperature Scaling:** NLL optimization")
+        report.append("- **Metrics:** ECE, MCE, Brier Score")
         report.append("")
 
         return "\n".join(report)
 
     def generate_latex_tables(self) -> str:
-        """Generează tabele LaTeX pentru teză."""
+        """Generate LaTeX tables for the thesis."""
         latex = []
 
         # Main comparison table
-        latex.append("% Tabel principal cu rezultatele calibrării")
+        latex.append("% Main table with calibration results")
         latex.append("\\begin{table}[htbp]")
         latex.append("\\centering")
-        latex.append("\\caption{Threshold-uri Calibrate pentru Metodele Forensic}")
+        latex.append("\\caption{Calibrated Thresholds for Forensic Methods}")
         latex.append("\\label{tab:calibrated_thresholds}")
         latex.append("\\begin{tabular}{lccccccc}")
         latex.append("\\toprule")
-        latex.append("Metodă & Threshold & 95\\% CI & AUC & F1 & MCC & ECE & Lit. \\\\")
+        latex.append("Method & Threshold & 95\\% CI & AUC & F1 & MCC & ECE & Lit. \\\\")
         latex.append("\\midrule")
 
         for result in self.results.values():
@@ -2031,14 +2031,14 @@ class AdvancedCalibrationEngine:
         latex.append("")
 
         # Cross-validation table
-        latex.append("% Tabel cu rezultatele cross-validation")
+        latex.append("% Table with cross-validation results")
         latex.append("\\begin{table}[htbp]")
         latex.append("\\centering")
-        latex.append("\\caption{Rezultate Cross-Validation (5-fold)}")
+        latex.append("\\caption{Cross-Validation Results (5-fold)}")
         latex.append("\\label{tab:cv_results}")
         latex.append("\\begin{tabular}{lcccc}")
         latex.append("\\toprule")
-        latex.append("Metodă & Threshold (mean±std) & F1 (mean±std) & AUC (mean±std) \\\\")
+        latex.append("Method & Threshold (mean±std) & F1 (mean±std) & AUC (mean±std) \\\\")
         latex.append("\\midrule")
 
         for result in self.results.values():
@@ -2061,7 +2061,7 @@ class AdvancedCalibrationEngine:
         return "\n".join(latex)
 
     def save_all_results(self):
-        """Salvează toate rezultatele."""
+        """Save all results."""
         # JSON
         json_path = self.output_dir / "calibration_results_advanced.json"
         with open(json_path, 'w', encoding='utf-8') as f:
@@ -2197,10 +2197,10 @@ def main():
     engine.save_all_results()
 
     print("\n" + "="*70)
-    print("CALIBRARE COMPLETĂ")
+    print("CALIBRATION COMPLETE")
     print("="*70)
-    print(f"\nRezultate salvate în: {args.output}")
-    print("\nFișiere generate:")
+    print(f"\nResults saved to: {args.output}")
+    print("\nGenerated files:")
     print("  - calibration_results_advanced.json")
     print("  - calibration_report_advanced.md")
     print("  - calibration_tables.tex")

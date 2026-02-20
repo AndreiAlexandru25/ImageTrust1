@@ -2,10 +2,10 @@
 """
 Threshold Calibration Script - Academic Validation
 
-Acest script calibrează threshold-urile pentru FIECARE metodă forensic
-și generează documentație pentru teză (tabele, grafice, justificări).
+This script calibrates thresholds for EACH forensic method
+and generates documentation for the thesis (tables, plots, justifications).
 
-Cerință profesor: "Nu pune valori de nebun, demonstrează-le experimental!"
+Professor requirement: "Don't use arbitrary values, demonstrate them experimentally!"
 
 Usage:
     python scripts/calibrate_thresholds.py --dataset data/calibration --output outputs/calibration

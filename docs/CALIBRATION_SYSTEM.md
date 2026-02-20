@@ -1,38 +1,38 @@
-# Sistemul de Calibrare a Threshold-urilor
+# Threshold Calibration System
 
-## Prezentare Generală
+## Overview
 
-Sistemul de calibrare implementat în ImageTrust oferă validare statistică riguroasă pentru toate threshold-urile utilizate în metodele forensic, conform cerințelor academice pentru teză de master.
+The calibration system implemented in ImageTrust provides rigorous statistical validation for all thresholds used in forensic methods, in accordance with the academic requirements for a Master's thesis.
 
-**Cerința profesorului:** "Nu pune valori de nebun, demonstrează-le experimental!"
-
----
-
-## Fișiere Principale
-
-| Fișier | Descriere |
-|--------|-----------|
-| `scripts/calibrate_thresholds.py` | Script de calibrare de bază |
-| `scripts/calibrate_thresholds_advanced.py` | **Script avansat** cu toate funcționalitățile |
-| `scripts/generate_calibration_plots.py` | Generare figuri pentru teză |
-| `docs/THRESHOLD_CALIBRATION.md` | Ghid metodologic |
+**Professor's requirement:** "Do not use arbitrary values, demonstrate them experimentally!"
 
 ---
 
-## Funcționalități Avansate
+## Main Files
 
-### 1. Metode de Selecție Threshold
+| File | Description |
+|------|-------------|
+| `scripts/calibrate_thresholds.py` | Basic calibration script |
+| `scripts/calibrate_thresholds_advanced.py` | **Advanced script** with all features |
+| `scripts/generate_calibration_plots.py` | Figure generation for the thesis |
+| `docs/THRESHOLD_CALIBRATION.md` | Methodological guide |
 
-| Metodă | Descriere | Când să folosești |
-|--------|-----------|-------------------|
-| **Youden's J** | Maximizează TPR - FPR | Dataset balansat |
-| **F1 Max** | Maximizează F1 score | Dataset moderat dezechilibrat |
-| **F2 Max** | Favorizează recall | Când false negatives sunt costisitoare |
-| **F0.5 Max** | Favorizează precision | Când false positives sunt costisitoare |
-| **MCC Max** | Maximizează Matthews Correlation | Dataset foarte dezechilibrat |
-| **G-Mean** | √(TPR × TNR) | Clasă minoritară importantă |
-| **EER** | FPR = FNR | Aplicații biometrice |
-| **Cost-Sensitive** | Minimizează costul ponderat | Costuri diferite pentru erori |
+---
+
+## Advanced Features
+
+### 1. Threshold Selection Methods
+
+| Method | Description | When to Use |
+|--------|-------------|-------------|
+| **Youden's J** | Maximizes TPR - FPR | Balanced dataset |
+| **F1 Max** | Maximizes F1 score | Moderately imbalanced dataset |
+| **F2 Max** | Favors recall | When false negatives are costly |
+| **F0.5 Max** | Favors precision | When false positives are costly |
+| **MCC Max** | Maximizes Matthews Correlation | Highly imbalanced dataset |
+| **G-Mean** | √(TPR × TNR) | Important minority class |
+| **EER** | FPR = FNR | Biometric applications |
+| **Cost-Sensitive** | Minimizes weighted cost | Different costs for errors |
 
 ### 2. Cross-Validation
 
@@ -43,60 +43,60 @@ python scripts/calibrate_thresholds_advanced.py \
     --output outputs/calibration
 ```
 
-- Stratified K-Fold (păstrează proporția claselor)
-- Threshold-ul se găsește pe training, se evaluează pe validation
-- Raportează mean ± std pentru toate metricile
+- Stratified K-Fold (preserves class proportions)
+- Threshold is found on training, evaluated on validation
+- Reports mean ± std for all metrics
 
 ### 3. Bootstrap Confidence Intervals
 
-- **BCa (Bias-Corrected and Accelerated)**: Mai robust decât percentile simplu
-- Intervale la 95% și 99%
-- Implicit: 1000 resample-uri
+- **BCa (Bias-Corrected and Accelerated)**: More robust than simple percentile
+- 95% and 99% intervals
+- Default: 1000 resamples
 
 ```python
-# Exemplu rezultat
+# Example result
 threshold_optimal: 0.68
 confidence_interval_95: [0.62, 0.74]
 confidence_interval_99: [0.59, 0.77]
 cv_threshold_std: 0.03
 ```
 
-### 4. Calibrarea Probabilităților
+### 4. Probability Calibration
 
 #### Temperature Scaling
 ```
 P_calibrated = sigmoid(logits / T)
 ```
-- Optimizează T pentru a minimiza Negative Log Likelihood
-- Tipic: T ∈ [0.5, 2.0]
+- Optimizes T to minimize Negative Log Likelihood
+- Typical: T ∈ [0.5, 2.0]
 
-#### Metrici de Calibrare
-- **ECE (Expected Calibration Error)**: Eroare medie de calibrare
+#### Calibration Metrics
+- **ECE (Expected Calibration Error)**: Average calibration error
 - **MCE (Maximum Calibration Error)**: Worst-case calibration
-- **Brier Score**: Mean squared error pentru probabilități
+- **Brier Score**: Mean squared error for probabilities
 
-### 5. Teste Statistice
+### 5. Statistical Tests
 
 #### McNemar Test
-- Compară două clasificatoare pe același dataset
-- Testează dacă diferența în erori este semnificativă
+- Compares two classifiers on the same dataset
+- Tests whether the difference in errors is statistically significant
 
 #### DeLong Test
-- Compară AUC-urile a două modele
-- Include interval de încredere pentru diferența de AUC
+- Compares the AUCs of two models
+- Includes confidence interval for the AUC difference
 
 #### Wilcoxon Signed-Rank
-- Compară performanța pe folds de cross-validation
-- Non-parametric, nu presupune normalitate
+- Compares performance across cross-validation folds
+- Non-parametric, does not assume normality
 
 ---
 
-## Utilizare
+## Usage
 
-### Calibrare Completă
+### Full Calibration
 
 ```bash
-# Calibrare pentru toate metodele
+# Calibration for all methods
 python scripts/calibrate_thresholds_advanced.py \
     --dataset data/casia_v2 \
     --dataset-name "CASIA v2.0" \
@@ -105,14 +105,14 @@ python scripts/calibrate_thresholds_advanced.py \
     --n-bootstrap 1000 \
     --seed 42
 
-# Doar o singură metodă
+# Only a single method
 python scripts/calibrate_thresholds_advanced.py \
     --dataset data/casia_v2 \
     --method ela \
     --output outputs/calibration_ela
 ```
 
-### Generare Figuri
+### Figure Generation
 
 ```bash
 python scripts/generate_calibration_plots.py \
@@ -121,33 +121,33 @@ python scripts/generate_calibration_plots.py \
     --format pdf
 ```
 
-### Figuri Generate
+### Generated Figures
 
-1. **Reliability Diagrams** - Curbe de calibrare
-2. **ROC Curves** - Comparație între metode
-3. **Precision-Recall Curves** - Pentru dataset dezechilibrat
-4. **CV Boxplots** - Variabilitate între folds
-5. **ECE Comparison** - Bar chart cu erori de calibrare
-6. **Metrics Heatmap** - Toate metricile într-o figură
-7. **Threshold Comparison** - Cu intervale de încredere
-8. **Statistical Significance Matrix** - p-values între metode
+1. **Reliability Diagrams** - Calibration curves
+2. **ROC Curves** - Comparison between methods
+3. **Precision-Recall Curves** - For imbalanced datasets
+4. **CV Boxplots** - Variability across folds
+5. **ECE Comparison** - Bar chart with calibration errors
+6. **Metrics Heatmap** - All metrics in a single figure
+7. **Threshold Comparison** - With confidence intervals
+8. **Statistical Significance Matrix** - p-values between methods
 
 ---
 
 ## Output Files
 
-După rulare, în folderul de output găsești:
+After running, the output folder contains:
 
 ```
 outputs/calibration/
-├── calibration_results_advanced.json    # Toate datele raw
-├── calibration_report_advanced.md       # Raport Markdown pentru teză
-├── calibration_tables.tex               # Tabele LaTeX
-├── calibrated_thresholds_advanced.py    # Config Python pentru cod
-└── reliability_diagram_data.json        # Date pentru plotare
+├── calibration_results_advanced.json    # All raw data
+├── calibration_report_advanced.md       # Markdown report for the thesis
+├── calibration_tables.tex               # LaTeX tables
+├── calibrated_thresholds_advanced.py    # Python config for code
+└── reliability_diagram_data.json        # Data for plotting
 ```
 
-### Utilizare în Cod
+### Usage in Code
 
 ```python
 from outputs.calibration.calibrated_thresholds_advanced import (
@@ -156,34 +156,34 @@ from outputs.calibration.calibrated_thresholds_advanced import (
     CALIBRATION_METADATA
 )
 
-# Folosește threshold-ul calibrat
+# Use the calibrated threshold
 ela_threshold = CALIBRATED_THRESHOLDS["ela"]  # 0.68
 
-# Verifică încrederea
+# Check confidence
 ci = THRESHOLD_CONFIDENCE_INTERVALS["ela"]  # (0.62, 0.74)
 
-# Obține metadata
+# Get metadata
 meta = CALIBRATION_METADATA["ela"]
 print(f"AUC: {meta['auc']}, F1: {meta['f1']}")
 ```
 
 ---
 
-## Structura Dataset pentru Calibrare
+## Dataset Structure for Calibration
 
 ```
 dataset/
-├── authentic/          # sau: real/, original/, genuine/, 0/
+├── authentic/          # or: real/, original/, genuine/, 0/
 │   ├── image1.jpg
 │   ├── image2.png
 │   └── ...
-└── manipulated/        # sau: fake/, tampered/, ai/, synthetic/, 1/
+└── manipulated/        # or: fake/, tampered/, ai/, synthetic/, 1/
     ├── image1.jpg
     ├── image2.png
     └── ...
 ```
 
-Alternativ, cu fișier de etichete:
+Alternatively, with a labels file:
 
 ```json
 // labels.json
@@ -202,52 +202,52 @@ python scripts/calibrate_thresholds_advanced.py \
 
 ---
 
-## Interpretare Rezultate
+## Interpreting Results
 
-### Ce înseamnă un rezultat bun?
+### What constitutes a good result?
 
-| Metrică | Foarte Bun | Acceptabil | Slab |
-|---------|------------|------------|------|
+| Metric | Very Good | Acceptable | Poor |
+|--------|-----------|------------|------|
 | AUC-ROC | > 0.90 | 0.80-0.90 | < 0.80 |
 | F1 | > 0.85 | 0.70-0.85 | < 0.70 |
 | MCC | > 0.70 | 0.50-0.70 | < 0.50 |
 | ECE | < 0.05 | 0.05-0.10 | > 0.10 |
 | CV std | < 0.03 | 0.03-0.08 | > 0.08 |
 
-### Semnificație Statistică
+### Statistical Significance
 
-- **p < 0.05**: Diferența este semnificativă statistic
-- **p < 0.01**: Diferență foarte semnificativă
-- **p ≥ 0.05**: Nu putem respinge ipoteza nulă (metodele sunt comparabile)
+- **p < 0.05**: The difference is statistically significant
+- **p < 0.01**: Highly significant difference
+- **p >= 0.05**: We cannot reject the null hypothesis (methods are comparable)
 
 ---
 
-## Pentru Teză
+## For the Thesis
 
-### Secțiuni de Inclus
+### Sections to Include
 
-1. **Metodologie** (Section 4.X)
-   - Prezintă fiecare metodă forensic
-   - Include referințele bibliografice din output
+1. **Methodology** (Section 4.X)
+   - Present each forensic method
+   - Include the bibliographic references from the output
 
-2. **Rezultate Experimentale** (Section 5)
-   - Copiază tabelele din `calibration_tables.tex`
-   - Include figurile din `outputs/figures/`
+2. **Experimental Results** (Section 5)
+   - Copy the tables from `calibration_tables.tex`
+   - Include the figures from `outputs/figures/`
 
-3. **Discuție** (Section 6)
-   - Analizează intervalele de încredere
-   - Compară cu threshold-uri din literatură
-   - Discută limitările fiecărei metode
+3. **Discussion** (Section 6)
+   - Analyze the confidence intervals
+   - Compare with thresholds from the literature
+   - Discuss the limitations of each method
 
-### Exemplu de Paragrafe
+### Example Paragraphs
 
 ```markdown
-Threshold-ul optim pentru ELA a fost determinat experimental la 0.68
-(95% CI: [0.62, 0.74]) prin maximizarea F1 score pe dataset-ul CASIA v2.0.
-Valoarea este consistentă cu observațiile din literatura de specialitate,
-unde Gunawan et al. (2017) raportează threshold-uri în intervalul 0.6-0.8.
-Cross-validarea pe 5 folds a demonstrat stabilitate bună
-(σ = 0.03), indicând robustețe la variația datelor.
+The optimal threshold for ELA was experimentally determined at 0.68
+(95% CI: [0.62, 0.74]) by maximizing the F1 score on the CASIA v2.0 dataset.
+This value is consistent with observations in the literature,
+where Gunawan et al. (2017) report thresholds in the range of 0.6-0.8.
+Cross-validation on 5 folds demonstrated good stability
+(σ = 0.03), indicating robustness to data variation.
 ```
 
 ---
@@ -255,20 +255,20 @@ Cross-validarea pe 5 folds a demonstrat stabilitate bună
 ## Troubleshooting
 
 ### "No images found"
-- Verifică structura folderelor (trebuie să fie `authentic/` și `manipulated/`)
-- Verifică extensiile fișierelor (.jpg, .jpeg, .png, .webp, .bmp)
+- Check the folder structure (it should be `authentic/` and `manipulated/`)
+- Check the file extensions (.jpg, .jpeg, .png, .webp, .bmp)
 
 ### "Bootstrap failed"
-- Crește numărul de eșantioane în dataset (minim 100)
-- Folosește `--n-bootstrap 500` pentru dataset-uri mici
+- Increase the number of samples in the dataset (minimum 100)
+- Use `--n-bootstrap 500` for small datasets
 
 ### "All threshold methods failed"
-- Dataset prea mic sau prea dezechilibrat
-- Verifică că ai cel puțin 20 imagini din fiecare clasă
+- Dataset too small or too imbalanced
+- Ensure you have at least 20 images from each class
 
 ---
 
-## Referințe
+## References
 
 1. **Youden's J Statistic**: Youden, W.J. (1950). Index for rating diagnostic tests.
 2. **Temperature Scaling**: Guo, C. et al. (2017). On Calibration of Modern Neural Networks. ICML.
@@ -278,4 +278,4 @@ Cross-validarea pe 5 folds a demonstrat stabilitate bună
 
 ---
 
-*Document generat pentru ImageTrust - Sistem de Detecție Forensic.*
+*Document generated for ImageTrust - Forensic Detection System.*

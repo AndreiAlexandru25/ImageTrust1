@@ -1309,7 +1309,7 @@ class EmbeddingFactory:
             tqdm.write("")
             tqdm.write("=" * 60)
             tqdm.write(f"  🎮 JOC DETECTAT: {game_name}")
-            tqdm.write(f"  → Trec în COMPETITIVE MODE (delay: {self._current_delay_ms}ms)")
+            tqdm.write(f"  → Switching to COMPETITIVE MODE (delay: {self._current_delay_ms}ms)")
             tqdm.write(f"  → Zero lag, zero frame drops")
             tqdm.write("=" * 60)
             tqdm.write("")
@@ -1321,8 +1321,8 @@ class EmbeddingFactory:
             self._current_delay_ms = 0
             tqdm.write("")
             tqdm.write("=" * 60)
-            tqdm.write(f"  💻 Niciun joc detectat - revenire la mod DESKTOP")
-            tqdm.write(f"  → Viteză maximă (fără delay)")
+            tqdm.write(f"  💻 No game detected - returning to DESKTOP mode")
+            tqdm.write(f"  → Maximum speed (no delay)")
             tqdm.write("=" * 60)
             tqdm.write("")
             return True
@@ -1960,9 +1960,9 @@ Hardware Target: RTX 5080 (16GB), AMD 7800X3D (8 cores)
 
         if smart_settings["game_detected"]:
             print(f"  🎮 JOC DETECTAT: {smart_settings['game_detected']}")
-            print(f"  → Trec în COMPETITIVE MODE automat")
+            print(f"  → Switching to COMPETITIVE MODE automatically")
         else:
-            print(f"  💻 Niciun joc detectat - mod DESKTOP (rapid)")
+            print(f"  💻 No game detected - DESKTOP mode (fast)")
             print(f"  → YouTube, Word, browsing = OK")
 
         print(f"")
@@ -1970,7 +1970,7 @@ Hardware Target: RTX 5080 (16GB), AMD 7800X3D (8 cores)
         print(f"  Batch: {smart_settings['batch_size']}")
         print(f"  CPU: {smart_settings['cpu_workers']} workers")
         print(f"")
-        print(f"  ℹ️  Verifică jocurile la fiecare 60 secunde")
+        print(f"  ℹ️  Checks for games every 60 seconds")
         print("=" * 70 + "\n")
 
         args.gpu_memory = smart_settings["gpu_memory"]
@@ -1990,7 +1990,7 @@ Hardware Target: RTX 5080 (16GB), AMD 7800X3D (8 cores)
         print("  Delay: 50ms between batches - smooth frames")
         print("")
         print("  ✅ Zero lag, zero rubber-banding, zero frame drops")
-        print("  ⏱️  Procesare mai lentă (~25% din viteză normală)")
+        print("  ⏱️  Slower processing (~25% of normal speed)")
         print("=" * 70 + "\n")
 
         args.gpu_memory = COMPETITIVE_MODE_GPU_MEMORY_FRACTION
@@ -2006,7 +2006,7 @@ Hardware Target: RTX 5080 (16GB), AMD 7800X3D (8 cores)
         print("  VRAM: 50% (8GB) - leaves 8GB for games")
         print("  Batch: 128 - lower peak memory")
         print("  CPU: 4 workers - leaves 4 cores for games")
-        print("  Jocuri compatibile: Cyberpunk, Elden Ring, etc.")
+        print("  Compatible games: Cyberpunk, Elden Ring, etc.")
         print("=" * 70 + "\n")
 
         args.gpu_memory = GAMING_MODE_GPU_MEMORY_FRACTION
@@ -2018,7 +2018,7 @@ Hardware Target: RTX 5080 (16GB), AMD 7800X3D (8 cores)
         print("\n" + "=" * 70)
         print("  ⏸️  PAUSE MODE - RELEASING ALL VRAM FOR GAMING")
         print("=" * 70)
-        print("  Eliberez VRAM-ul complet pentru jocuri...")
+        print("  Releasing all VRAM for games...")
 
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
@@ -2026,10 +2026,10 @@ Hardware Target: RTX 5080 (16GB), AMD 7800X3D (8 cores)
             # Force Python garbage collection
             gc.collect()
 
-        print("  ✅ VRAM eliberat! Poți juca acum.")
-        print("\n  Apasă ENTER când termini de jucat pentru a continua procesarea...")
+        print("  ✅ VRAM released! You can play now.")
+        print("\n  Press ENTER when you are done playing to resume processing...")
         input()
-        print("  Reiau procesarea...\n")
+        print("  Resuming processing...\n")
 
     # Create configuration
     config = PipelineConfig(

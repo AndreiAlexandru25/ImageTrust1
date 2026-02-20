@@ -1,35 +1,35 @@
-# ImageTrust - Master Plan Academic
-## Disertație de Master - Nivel Conferință Internațională B (IEEE WIFS / ACM IH&MMSec)
+# ImageTrust - Academic Master Plan
+## Master's Thesis - International Conference B Level (IEEE WIFS / ACM IH&MMSec)
 
-**Data:** Februarie 2026
-**Status:** ConvNeXt în antrenare (Epoch 14/25)
+**Date:** February 2026
+**Status:** ConvNeXt in training (Epoch 14/25)
 
 ---
 
 ## Executive Summary
 
-| Fază | Descriere | Timp Estimat | Status |
-|------|-----------|--------------|--------|
-| 1 | Setup + Antrenare Modele Custom | ~150h | ✅ 85% Done |
-| 2 | Evaluare Academică Completă | 4-6h | ⬜ Next |
-| 3 | Ablation Study Complet | 2-3h | ⬜ |
-| 4 | Calibrare + Uncertainty | 1-2h | ⬜ |
-| 5 | Screenshot/Recapture Detection | 8-12h | ⬜ NOU |
-| 6 | Social Media Recompression | 8-12h | ⬜ NOU |
+| Phase | Description | Estimated Time | Status |
+|-------|-------------|----------------|--------|
+| 1 | Setup + Custom Model Training | ~150h | ✅ 85% Done |
+| 2 | Complete Academic Evaluation | 4-6h | ⬜ Next |
+| 3 | Complete Ablation Study | 2-3h | ⬜ |
+| 4 | Calibration + Uncertainty | 1-2h | ⬜ |
+| 5 | Screenshot/Recapture Detection | 8-12h | ⬜ NEW |
+| 6 | Social Media Recompression | 8-12h | ⬜ NEW |
 | 7 | Cross-Generator Evaluation | 2-3h | ⬜ |
 | 8 | Degradation Robustness | 2-3h | ⬜ |
-| 9 | Tabele LaTeX + Figuri PDF | 2-4h | ⬜ |
-| 10 | UI Professional (PySide6) | 16-24h | ⬜ |
+| 9 | LaTeX Tables + PDF Figures | 2-4h | ⬜ |
+| 10 | Professional UI (PySide6) | 16-24h | ⬜ |
 | 11 | Build .exe + Testing | 4-8h | ⬜ |
-| 12 | Documentație + README Final | 2-4h | ⬜ |
+| 12 | Documentation + Final README | 2-4h | ⬜ |
 
-**Total rămas:** ~50-80h de muncă după ConvNeXt
+**Total remaining:** ~50-80h of work after ConvNeXt
 
 ---
 
-## PARTEA I: FUNDAMENT ACADEMIC (Obligatoriu pentru Publicare)
+## PART I: ACADEMIC FOUNDATION (Mandatory for Publication)
 
-### 1.1 Modele Antrenate Custom (✅ În Progres)
+### 1.1 Custom Trained Models (✅ In Progress)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -43,27 +43,27 @@
 └─────────────────┴──────────┴────────┴────────┴─────────────────┘
 ```
 
-**Observație Critică:** Recall scăzut (~47%) - necesită threshold tuning sau focal loss.
+**Critical Observation:** Low recall (~47%) - requires threshold tuning or focal loss.
 
-### 1.2 Baseline Comparison (OBLIGATORIU)
+### 1.2 Baseline Comparison (MANDATORY)
 
-Conform cerințelor disertației, trebuie comparație cu **minimum 3 baseline-uri**:
+As per the thesis requirements, a comparison with **at least 3 baselines** is needed:
 
-| Baseline | Metodă | Implementare | Status |
-|----------|--------|--------------|--------|
-| **Baseline 1** | Classical ML | XGBoost pe features forensice (JPEG artifacts, noise, frequency) | ⬜ TODO |
-| **Baseline 2** | CNN Single | ResNet-50 fine-tuned (cel antrenat de tine) | ✅ Done |
-| **Baseline 3** | Modern/ViT | HuggingFace pretrained detectors (ensemble din 4 modele) | ✅ Done |
+| Baseline | Method | Implementation | Status |
+|----------|--------|----------------|--------|
+| **Baseline 1** | Classical ML | XGBoost on forensic features (JPEG artifacts, noise, frequency) | ⬜ TODO |
+| **Baseline 2** | CNN Single | ResNet-50 fine-tuned (custom trained) | ✅ Done |
+| **Baseline 3** | Modern/ViT | HuggingFace pretrained detectors (ensemble of 4 models) | ✅ Done |
 | **ImageTrust** | Ensemble + Signal Analysis | Custom trained + HF models + forensics | ✅ Done |
 
 ### 1.3 Metrics Required (Paper-Ready)
 
-Pentru fiecare metodă, trebuie raportate:
+For each method, the following must be reported:
 
 ```
 Primary Metrics (Table 1):
 ├── Accuracy
-├── Balanced Accuracy  ← ADĂUGAT în metrics.py
+├── Balanced Accuracy  ← ADDED in metrics.py
 ├── Precision
 ├── Recall
 ├── F1-Score
@@ -80,34 +80,34 @@ Secondary Metrics:
 
 ---
 
-## PARTEA II: ABLATION STUDY (OBLIGATORIU)
+## PART II: ABLATION STUDY (MANDATORY)
 
 ### 2.1 Component Ablation
 
-Testează impactul fiecărei componente:
+Test the impact of each component:
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │                      ABLATION EXPERIMENTS                         │
 ├──────────────────────────────────┬───────────────────────────────┤
-│ Experiment                       │ Ce Măsoară                    │
+│ Experiment                       │ What It Measures              │
 ├──────────────────────────────────┼───────────────────────────────┤
-│ Full System (Baseline)           │ Performanța completă          │
-│ - Without Model 1 (Deepfake)     │ Contribuția modelului 1       │
-│ - Without Model 2 (AI-Detector)  │ Contribuția modelului 2       │
-│ - Without Model 3 (AIorNot)      │ Contribuția modelului 3       │
-│ - Without Model 4 (NYUAD)        │ Contribuția modelului 4       │
-│ - Without Signal Analysis        │ Valoarea analizei de semnal   │
-│ - Without Calibration            │ Impactul calibrării           │
-│ - Single Best Model Only         │ Beneficiul ensemble           │
+│ Full System (Baseline)           │ Complete performance          │
+│ - Without Model 1 (Deepfake)     │ Contribution of model 1      │
+│ - Without Model 2 (AI-Detector)  │ Contribution of model 2      │
+│ - Without Model 3 (AIorNot)      │ Contribution of model 3      │
+│ - Without Model 4 (NYUAD)        │ Contribution of model 4      │
+│ - Without Signal Analysis        │ Value of signal analysis      │
+│ - Without Calibration            │ Impact of calibration         │
+│ - Single Best Model Only         │ Benefit of ensemble           │
 ├──────────────────────────────────┼───────────────────────────────┤
 │ Ensemble Strategy Comparison     │                               │
 ├──────────────────────────────────┼───────────────────────────────┤
-│ Average Voting                   │ Strategie simplă              │
-│ Weighted Voting                  │ Cu ponderi pe model           │
-│ Majority Voting                  │ Vot majoritar                 │
-│ Max Probability                  │ Cel mai confident             │
-│ Median                           │ Robust la outlieri            │
+│ Average Voting                   │ Simple strategy               │
+│ Weighted Voting                  │ With per-model weights        │
+│ Majority Voting                  │ Majority vote                 │
+│ Max Probability                  │ Most confident                │
+│ Median                           │ Robust to outliers            │
 ├──────────────────────────────────┼───────────────────────────────┤
 │ Calibration Methods              │                               │
 ├──────────────────────────────────┼───────────────────────────────┤
@@ -121,11 +121,11 @@ Testează impactul fiecărei componente:
 ### 2.2 Backbone Ablation
 
 ```python
-# Ce avem antrenat:
+# What we have trained:
 backbones = {
     "ResNet-50": "outputs/training_resnet50/best_model.pth",
     "EfficientNetV2-M": "outputs/training_efficientnet/best_model.pth",
-    "ConvNeXt-Base": "outputs/training_convnext/best_model.pth",  # În antrenare
+    "ConvNeXt-Base": "outputs/training_convnext/best_model.pth",  # In training
 }
 
 # Plus HuggingFace pretrained:
@@ -139,7 +139,7 @@ hf_models = [
 
 ---
 
-## PARTEA III: CALIBRATION & UNCERTAINTY (OBLIGATORIU)
+## PART III: CALIBRATION & UNCERTAINTY (MANDATORY)
 
 ### 3.1 Calibration Analysis
 
@@ -148,7 +148,7 @@ hf_models = [
 │                    CALIBRATION DELIVERABLES                      │
 ├─────────────────────────────────────────────────────────────────┤
 │ 1. Reliability Diagram (Figure 1)                                │
-│    - Calibration curve pentru fiecare metodă                     │
+│    - Calibration curve for each method                           │
 │    - Perfect calibration line (diagonal)                         │
 │    - Histogram of predictions                                    │
 │                                                                  │
@@ -178,26 +178,26 @@ hf_models = [
 │                                                                  │
 │ Deliverables:                                                    │
 │ 1. Coverage vs Accuracy Curve (Figure 5)                         │
-│    - Trade-off între coverage și accuracy                        │
+│    - Trade-off between coverage and accuracy                     │
 │    - AURC (Area Under Risk-Coverage Curve)                       │
 │                                                                  │
 │ 2. Abstain Analysis Table                                        │
-│    - Threshold → Coverage → Accuracy pe covered samples          │
+│    - Threshold → Coverage → Accuracy on covered samples          │
 │    - Error rejection rate                                        │
 │                                                                  │
 │ 3. UNCERTAIN Verdict Integration                                 │
-│    - Când modelul nu e sigur → returnează "UNCERTAIN"            │
-│    - Definește clar condițiile de abstain                        │
+│    - When the model is unsure → returns "UNCERTAIN"              │
+│    - Clearly define the abstain conditions                       │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## PARTEA IV: CROSS-GENERATOR & DEGRADATION (OBLIGATORIU)
+## PART IV: CROSS-GENERATOR & DEGRADATION (MANDATORY)
 
 ### 4.1 Cross-Generator Evaluation
 
-Testează generalizarea pe generatori ne-văzuți în training:
+Test generalization on generators unseen during training:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -222,7 +222,7 @@ Generators to Test:
 
 ### 4.2 Degradation Robustness
 
-Testează robustețea la post-procesare:
+Test robustness to post-processing:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -244,50 +244,50 @@ Testează robustețea la post-procesare:
 
 ---
 
-## PARTEA V: NOI CONTRIBUȚII (Screenshot + Social Media Detection)
+## PART V: NOVEL CONTRIBUTIONS (Screenshot + Social Media Detection)
 
-### 5.1 Screenshot/Recapture Detection (FAZA 8)
+### 5.1 Screenshot/Recapture Detection (PHASE 8)
 
-**CE E NOU:** Detector ML pentru a identifica dacă o imagine e screenshot/recapture.
+**WHAT IS NEW:** An ML detector to identify whether an image is a screenshot/recapture.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │              SCREENSHOT DETECTION MODULE                         │
 ├─────────────────────────────────────────────────────────────────┤
-│ Problemă: Imaginile screenshot/recaptured au:                    │
+│ Problem: Screenshot/recaptured images have:                      │
 │ ├── Moiré patterns                                               │
 │ ├── Color banding                                                │
 │ ├── Resolution artifacts                                         │
 │ └── UI elements/borders (sometimes)                              │
 │                                                                  │
-│ Soluție Propusă:                                                 │
-│ 1. Generare Dataset Automat                                      │
-│    ├── Ia imagini originale din dataset                          │
-│    ├── Afișează pe ecran + screenshot (Selenium/PIL)             │
-│    ├── Sau: simulează screenshot artifacts programatic           │
-│    └── Etichetează: original=0, screenshot=1                     │
+│ Proposed Solution:                                               │
+│ 1. Automatic Dataset Generation                                  │
+│    ├── Take original images from the dataset                     │
+│    ├── Display on screen + screenshot (Selenium/PIL)             │
+│    ├── Or: simulate screenshot artifacts programmatically        │
+│    └── Label: original=0, screenshot=1                           │
 │                                                                  │
 │ 2. Train Classifier                                              │
 │    ├── Binary classifier (original vs screenshot)                │
-│    ├── Folosește features: frequency analysis, noise patterns    │
-│    └── Lightweight CNN sau even SVM pe features                  │
+│    ├── Uses features: frequency analysis, noise patterns         │
+│    └── Lightweight CNN or even SVM on features                   │
 │                                                                  │
-│ 3. Integrare în Pipeline                                         │
+│ 3. Pipeline Integration                                          │
 │    └── Output: "screenshot_probability": 0.0-1.0                 │
 │                                                                  │
-│ Fișier: src/imagetrust/detection/screenshot_detector.py          │
+│ File: src/imagetrust/detection/screenshot_detector.py            │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 5.2 Social Media Recompression Detection (FAZA 9)
+### 5.2 Social Media Recompression Detection (PHASE 9)
 
-**CE E NOU:** Detector pentru a identifica dacă imaginea a trecut prin social media.
+**WHAT IS NEW:** A detector to identify whether an image has been through social media.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │           SOCIAL MEDIA RECOMPRESSION DETECTOR                    │
 ├─────────────────────────────────────────────────────────────────┤
-│ Platforme Țintă:                                                 │
+│ Target Platforms:                                                │
 │ ├── WhatsApp (JPEG Q~70, resize to 1600px, strips EXIF)         │
 │ ├── Instagram (JPEG Q~80, specific sharpening)                   │
 │ ├── Facebook (JPEG Q~85, resize)                                 │
@@ -303,28 +303,28 @@ Testează robustețea la post-procesare:
 │    └── Class 4: Generic social media                             │
 │                                                                  │
 │ 2. Dataset Generation                                            │
-│    ├── Simulează fiecare platformă programatic                   │
-│    ├── Documentează exact parametrii folosiți                    │
-│    └── Balance: ~2000 imagini per clasă                          │
+│    ├── Simulate each platform programmatically                   │
+│    ├── Document the exact parameters used                        │
+│    └── Balance: ~2000 images per class                           │
 │                                                                  │
 │ 3. Conservative Attribution                                      │
-│    ├── NU claim specific platform fără high confidence           │
+│    ├── Do NOT claim specific platform without high confidence    │
 │    ├── Output: "likely_recompressed": true/false                 │
 │    ├── Output: "recompression_type": "whatsapp-like" / "unknown" │
 │    └── Output: "recompression_confidence": 0.0-1.0               │
 │                                                                  │
-│ Fișier: src/imagetrust/detection/recompression_detector.py       │
+│ File: src/imagetrust/detection/recompression_detector.py         │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 5.3 Ce Trebuie Menționat în Publicație
+### 5.3 What Must Be Mentioned in the Publication
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│           CONTRIBUȚII - CE E NOU vs CE E STANDARD                │
+│           CONTRIBUTIONS - WHAT IS NEW vs WHAT IS STANDARD        │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│ ✅ STANDARD (Nu necesită claim de noutate):                      │
+│ ✅ STANDARD (Does not require novelty claim):                    │
 │ ├── Ensemble of pretrained detectors                             │
 │ ├── Temperature/Platt/Isotonic calibration                       │
 │ ├── Cross-generator evaluation protocol                          │
@@ -332,8 +332,8 @@ Testează robustețea la post-procesare:
 │ ├── Ablation study methodology                                   │
 │ └── Uncertainty estimation (entropy, margin)                     │
 │                                                                  │
-│ ⭐ CONTRIBUȚII PROPRII (Trebuie evidențiate):                    │
-│ ├── 1. Custom-trained models pe dataset specific                 │
+│ ⭐ OWN CONTRIBUTIONS (Must be highlighted):                     │
+│ ├── 1. Custom-trained models on specific dataset                 │
 │ │      → "We fine-tune ResNet-50, EfficientNetV2-M, and          │
 │ │         ConvNeXt-Base on our curated dataset"                  │
 │ │                                                                │
@@ -341,11 +341,11 @@ Testează robustețea la post-procesare:
 │ │      → "We combine ML predictions with frequency and           │
 │ │         noise analysis for robust detection"                   │
 │ │                                                                │
-│ ├── 3. Screenshot/Recapture Detection Module (NOU!)             │
+│ ├── 3. Screenshot/Recapture Detection Module (NEW!)              │
 │ │      → "We introduce a novel screenshot detection module       │
 │ │         that identifies recaptured images with X% accuracy"    │
 │ │                                                                │
-│ ├── 4. Social Media Recompression Detection (NOU!)              │
+│ ├── 4. Social Media Recompression Detection (NEW!)               │
 │ │      → "We propose a social media forensics module that        │
 │ │         detects platform-specific compression artifacts"       │
 │ │                                                                │
@@ -353,7 +353,7 @@ Testează robustețea la post-procesare:
 │        → "We provide a complete forensic tool as standalone      │
 │           Windows application for practical deployment"          │
 │                                                                  │
-│ 📝 FORMULARE RECOMANDATĂ ÎN PAPER:                              │
+│ RECOMMENDED PHRASING IN PAPER:                                   │
 │ "Our main contributions are:                                     │
 │  (1) A comprehensive AI image detection system combining         │
 │      multiple pretrained and custom-trained models;              │
@@ -366,27 +366,27 @@ Testează robustețea la post-procesare:
 
 ---
 
-## PARTEA VI: TABELE ȘI FIGURI PENTRU PAPER
+## PART VI: TABLES AND FIGURES FOR THE PAPER
 
-### 6.1 Tabele Obligatorii
+### 6.1 Required Tables
 
-| Table # | Conținut | Status |
-|---------|----------|--------|
+| Table # | Content | Status |
+|---------|---------|--------|
 | Table 1 | Main Comparison: Baselines vs ImageTrust (Acc, Bal.Acc, Prec, Rec, F1, AUC, ECE) | ⬜ |
 | Table 2 | Cross-Generator Performance Matrix | ⬜ |
 | Table 3 | Degradation Robustness Results | ⬜ |
 | Table 4 | Ablation Study Results | ⬜ |
 | Table 5 | Calibration Comparison (ECE before/after) | ⬜ |
 | Table 6 | Efficiency Metrics (ms/img, throughput, VRAM) | ⬜ |
-| Table 7 | Screenshot Detection Results (NOU) | ⬜ |
-| Table 8 | Social Media Recompression Results (NOU) | ⬜ |
+| Table 7 | Screenshot Detection Results (NEW) | ⬜ |
+| Table 8 | Social Media Recompression Results (NEW) | ⬜ |
 | Table 9 | Statistical Significance Tests | ⬜ |
 | Table 10 | Dataset Statistics | ⬜ |
 
-### 6.2 Figuri Obligatorii
+### 6.2 Required Figures
 
-| Figure # | Conținut | Status |
-|----------|----------|--------|
+| Figure # | Content | Status |
+|----------|---------|--------|
 | Figure 1 | System Architecture Diagram | ⬜ |
 | Figure 2 | Reliability Diagram (Calibration Curves) | ⬜ |
 | Figure 3 | ROC Curves (per baseline) | ⬜ |
@@ -399,7 +399,7 @@ Testează robustețea la post-procesare:
 
 ---
 
-## PARTEA VII: DESKTOP APPLICATION
+## PART VII: DESKTOP APPLICATION
 
 ### 7.1 UI Requirements
 
@@ -452,10 +452,10 @@ Additional Tabs/Features:
 
 ```
 Build Process:
-├── PyInstaller pentru .exe
-├── Include model weights (sau download la first-run)
-├── Code signing (opțional, pentru Windows SmartScreen)
-└── Installer cu NSIS (opțional)
+├── PyInstaller for .exe
+├── Include model weights (or download on first-run)
+├── Code signing (optional, for Windows SmartScreen)
+└── Installer with NSIS (optional)
 
 Testing Checklist:
 ├── [ ] Works on Windows 10/11 clean install
@@ -468,9 +468,9 @@ Testing Checklist:
 
 ---
 
-## PARTEA VIII: TIMELINE DETALIATĂ
+## PART VIII: DETAILED TIMELINE
 
-### După terminarea ConvNeXt (~11h rămase la 81h total):
+### After ConvNeXt finishes (~11h remaining at 81h total):
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -510,7 +510,7 @@ Testing Checklist:
 │ D+7  │ UI Implementation - Core                 │ 8h            │
 ├──────┼──────────────────────────────────────────┼───────────────┤
 │ D+8  │ UI Implementation - Polish               │ 8h            │
-│      │ UI Screenshots pentru paper              │ 1h            │
+│      │ UI Screenshots for the paper             │ 1h            │
 ├──────┼──────────────────────────────────────────┼───────────────┤
 │ D+9  │ Build .exe                               │ 4h            │
 │      │ Test on clean Windows VM                 │ 2h            │
@@ -526,33 +526,33 @@ Testing Checklist:
 
 ---
 
-## PARTEA IX: COMMANDS REFERENCE
+## PART IX: COMMANDS REFERENCE
 
-### După ConvNeXt, rulează în ordine:
+### After ConvNeXt, run in order:
 
 ```bash
-# 1. Verifică rezultatele ConvNeXt
+# 1. Verify ConvNeXt results
 python scripts/evaluate_model.py --model outputs/training_convnext/best_model.pth
 
-# 2. Fix recall (ajustează threshold)
+# 2. Fix recall (adjust threshold)
 python scripts/optimize_threshold.py --models outputs/training_*/best_model.pth
 
-# 3. Rulează baseline comparison
+# 3. Run baseline comparison
 python scripts/run_baselines.py --dataset data/test --output outputs/baselines
 
-# 4. Rulează ablation study
+# 4. Run ablation study
 python scripts/run_ablation.py --dataset data/test --output outputs/ablation
 
-# 5. Evaluare cross-generator
+# 5. Cross-generator evaluation
 python scripts/run_evaluation.py --dataset data/eval --cross-generator
 
-# 6. Evaluare degradation
+# 6. Degradation evaluation
 python scripts/run_evaluation.py --dataset data/eval --degradation
 
-# 7. Generează tabele
+# 7. Generate tables
 python scripts/generate_tables.py --results outputs --output reports/tables
 
-# 8. Generează figuri
+# 8. Generate figures
 python scripts/generate_figures.py --results outputs --output reports/figures
 
 # 9. Build .exe
@@ -561,9 +561,9 @@ powershell -File scripts/build_exe.ps1
 
 ---
 
-## PARTEA X: CHECKLIST FINAL
+## PART X: FINAL CHECKLIST
 
-### Înainte de Submission:
+### Before Submission:
 
 ```
 Academic Requirements:
@@ -595,19 +595,19 @@ Deliverables:
 
 ---
 
-## Notă Finală
+## Final Note
 
-Acest plan te pune la nivel de **conferință internațională B**.
+This plan puts you at **international conference B level**.
 
-**Ce te diferențiază:**
-1. Evaluare extrem de riguroasă (cross-generator, degradation, ablation)
-2. Module noi (screenshot + social media) - contribuții originale
-3. Aplicație practică funcțională
-4. Reproducibilitate completă
+**What sets you apart:**
+1. Extremely rigorous evaluation (cross-generator, degradation, ablation)
+2. Novel modules (screenshot + social media) - original contributions
+3. Functional practical application
+4. Complete reproducibility
 
-**Riscuri:**
-- Recall scăzut la modele (~47%) - **TREBUIE FIXAT**
-- Timp limitat pentru UI polish
-- Testare .exe poate avea surprize
+**Risks:**
+- Low recall on models (~47%) - **MUST BE FIXED**
+- Limited time for UI polish
+- .exe testing may have surprises
 
-Spune-mi când termină ConvNeXt și începem execuția!
+Let me know when ConvNeXt finishes and we start the execution!

@@ -1,10 +1,10 @@
 # ImageTrust / Cyber Scout - Project Diagrams
 
-Diagrame complete ale arhitecturii și fluxului de date.
+Complete diagrams of the architecture and data flow.
 
 ---
 
-## 1. Arhitectura Generală a Sistemului
+## 1. General System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -111,7 +111,7 @@ Diagrame complete ale arhitecturii și fluxului de date.
 
 ---
 
-## 2. Structura Repository-ului
+## 2. Repository Structure
 
 ```
 imagetrust/
@@ -271,7 +271,7 @@ imagetrust/
 
 ---
 
-## 3. Fluxul de Date - Analiză Completă
+## 3. Data Flow - Complete Analysis
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -640,7 +640,7 @@ flowchart TB
 
 ---
 
-## 5. Comparație Baseline-uri (Thesis)
+## 5. Baseline Comparison (Thesis)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -897,7 +897,7 @@ flowchart TB
 
 ---
 
-## 8. Sumar Vizual
+## 8. Visual Summary
 
 ```
 ╔═══════════════════════════════════════════════════════════════════════════════════════════════════╗

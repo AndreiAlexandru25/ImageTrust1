@@ -496,21 +496,21 @@ def main():
         ---
         
         🔥 **Grad-CAM Heatmap:**
-        - Vizualizare zone AI
-        - Regiuni suspecte
-        
+        - AI region visualization
+        - Suspicious regions
+
         ---
-        
+
         🧩 **Copy-Move Detection:**
-        - Detectare manipulări
+        - Manipulation detection
         - Splicing analysis
-        
+
         ---
-        
+
         🔐 **C2PA Verification:**
         - Content Credentials
-        - Semnătură digitală
-        - Istoric editări
+        - Digital signature
+        - Edit history
         """)
     
     # Main content
@@ -875,11 +875,11 @@ def main():
                 The local analysis is not definitive. Use external verification below.
                 """)
             
-            with st.expander("🔗 Verificare Externă (opțională)", expanded=False):
-                st.markdown("### 🔗 Verificare Externă GRATUITĂ (Acuratețe mai mare)")
+            with st.expander("🔗 External Verification (optional)", expanded=False):
+                st.markdown("### 🔗 FREE External Verification (Higher Accuracy)")
                 st.markdown("""
-                Modelele locale au acuratețe ~70-85%. Pentru verificare cu **acuratețe 90-95%**, 
-                folosește aceste servicii **GRATUITE**:
+                Local models have ~70-85% accuracy. For verification with **90-95% accuracy**,
+                use these **FREE** services:
                 """)
                 
                 col_ext1, col_ext2, col_ext3 = st.columns(3)
@@ -887,31 +887,31 @@ def main():
                 with col_ext1:
                     st.markdown("""
                     #### 🥇 Illuminarty
-                    - **Acuratețe: ~95%**
-                    - 50 imagini/lună GRATIS
-                    - Detectează DALL-E, MJ, SD
-                    
-                    [🔗 Deschide Illuminarty](https://illuminarty.ai)
+                    - **Accuracy: ~95%**
+                    - 50 images/month FREE
+                    - Detects DALL-E, MJ, SD
+
+                    [🔗 Open Illuminarty](https://illuminarty.ai)
                     """)
                 
                 with col_ext2:
                     st.markdown("""
                     #### 🥈 AI or Not
-                    - **Acuratețe: ~90%**
-                    - NELIMITAT gratuit
-                    - Rezultat instant
-                    
-                    [🔗 Deschide AI or Not](https://aiornot.com)
+                    - **Accuracy: ~90%**
+                    - UNLIMITED free
+                    - Instant result
+
+                    [🔗 Open AI or Not](https://aiornot.com)
                     """)
                 
                 with col_ext3:
                     st.markdown("""
                     #### 🥉 Hive Demo
-                    - **Acuratețe: ~99%**
-                    - Test manual gratuit
-                    - Cel mai precis
-                    
-                    [🔗 Deschide Hive](https://hivemoderation.com/ai-generated-content-detection)
+                    - **Accuracy: ~99%**
+                    - Free manual testing
+                    - Most accurate
+
+                    [🔗 Open Hive](https://hivemoderation.com/ai-generated-content-detection)
                     """)
             
             # Processing stats

@@ -2,9 +2,9 @@
 """
 Calibration Visualization Script - Paper-Ready Plots
 
-Generează figuri pentru teză:
-1. Reliability Diagrams (curbe de calibrare)
-2. ROC Curves cu comparație între metode
+Generates figures for the thesis:
+1. Reliability Diagrams (calibration curves)
+2. ROC Curves with comparison between methods
 3. Precision-Recall Curves
 4. Confusion Matrix Heatmaps
 5. Threshold Analysis Plots
@@ -91,17 +91,17 @@ def plot_reliability_diagram(
 
     # Plot bars for accuracy
     ax1.bar(bin_centers, bin_accuracies, width=0.05, alpha=0.7,
-            color='steelblue', edgecolor='navy', label='Accuracy în bin')
+            color='steelblue', edgecolor='navy', label='Accuracy per bin')
 
     # Plot diagonal (perfect calibration)
-    ax1.plot([0, 1], [0, 1], 'k--', lw=1.5, label='Calibrare perfectă')
+    ax1.plot([0, 1], [0, 1], 'k--', lw=1.5, label='Perfect calibration')
 
     # Plot confidence line
     ax1.plot(bin_centers, bin_confidences, 'ro-', markersize=4, alpha=0.8,
-             label='Confidence medie')
+             label='Mean confidence')
 
-    ax1.set_xlabel('Probabilitate prezisă (Confidence)')
-    ax1.set_ylabel('Frecvență observată (Accuracy)')
+    ax1.set_xlabel('Predicted Probability (Confidence)')
+    ax1.set_ylabel('Observed Frequency (Accuracy)')
     ax1.set_title(f'Reliability Diagram - {method_name}')
     ax1.legend(loc='upper left')
     ax1.set_xlim(0, 1)
@@ -112,9 +112,9 @@ def plot_reliability_diagram(
     # Right plot: Histogram of predictions
     ax2.bar(bin_centers, bin_counts, width=0.05, alpha=0.7,
             color='forestgreen', edgecolor='darkgreen')
-    ax2.set_xlabel('Probabilitate prezisă')
-    ax2.set_ylabel('Număr de predicții')
-    ax2.set_title('Distribuția Predicțiilor')
+    ax2.set_xlabel('Predicted Probability')
+    ax2.set_ylabel('Number of Predictions')
+    ax2.set_title('Prediction Distribution')
     ax2.set_xlim(0, 1)
     ax2.grid(True, alpha=0.3)
 
@@ -214,7 +214,7 @@ def plot_roc_curves(
 
     ax.set_xlabel('False Positive Rate (1 - Specificity)')
     ax.set_ylabel('True Positive Rate (Sensitivity)')
-    ax.set_title('ROC Curves - Comparație Metode')
+    ax.set_title('ROC Curves - Method Comparison')
     ax.legend(loc='lower right')
     ax.set_xlim([0, 1])
     ax.set_ylim([0, 1.02])
@@ -258,11 +258,11 @@ def plot_precision_recall_curves(
         first_labels = list(scores_data.values())[0][0]
         baseline = np.mean(first_labels)
         ax.axhline(y=baseline, color='gray', linestyle='--', lw=1,
-                   label=f'Baseline (prevalență = {baseline:.3f})')
+                   label=f'Baseline (prevalence = {baseline:.3f})')
 
     ax.set_xlabel('Recall')
     ax.set_ylabel('Precision')
-    ax.set_title('Precision-Recall Curves - Comparație Metode')
+    ax.set_title('Precision-Recall Curves - Method Comparison')
     ax.legend(loc='lower left')
     ax.set_xlim([0, 1])
     ax.set_ylim([0, 1.02])
@@ -368,9 +368,9 @@ def plot_ece_comparison(
     bars1 = ax.bar(x - width/2, ece_values, width, label='ECE', color='steelblue', edgecolor='navy')
     bars2 = ax.bar(x + width/2, mce_values, width, label='MCE', color='coral', edgecolor='darkred')
 
-    ax.set_xlabel('Metodă')
-    ax.set_ylabel('Eroare de Calibrare')
-    ax.set_title('Comparație ECE și MCE între Metode')
+    ax.set_xlabel('Method')
+    ax.set_ylabel('Calibration Error')
+    ax.set_title('ECE and MCE Comparison Between Methods')
     ax.set_xticks(x)
     ax.set_xticklabels(methods, rotation=45, ha='right')
     ax.legend()
@@ -448,7 +448,7 @@ def plot_metrics_heatmap(
                           color="white" if data[i, j] < 0.5 else "black",
                           fontsize=9)
 
-    ax.set_title('Metrici de Performanță per Metodă')
+    ax.set_title('Performance Metrics per Method')
 
     plt.tight_layout()
 
@@ -506,9 +506,9 @@ def plot_threshold_comparison(
                     alpha=0.2, color='steelblue',
                     label='±1 std (CV)')
 
-    ax.set_xlabel('Metodă')
+    ax.set_xlabel('Method')
     ax.set_ylabel('Threshold')
-    ax.set_title('Threshold-uri Optime cu Intervale de Încredere')
+    ax.set_title('Optimal Thresholds with Confidence Intervals')
     ax.set_xticks(x)
     ax.set_xticklabels(methods, rotation=45, ha='right')
     ax.legend()
@@ -589,7 +589,7 @@ def plot_statistical_significance_matrix(
             else:
                 ax.text(j, i, '-', ha='center', va='center', fontsize=8)
 
-    ax.set_title('Semnificanță Statistică (McNemar Test)\n* p < 0.05')
+    ax.set_title('Statistical Significance (McNemar Test)\n* p < 0.05')
 
     plt.tight_layout()
 

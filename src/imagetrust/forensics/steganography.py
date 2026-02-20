@@ -1,19 +1,19 @@
 """
 Steganography Detection Module
 
-Detectarea ascunderii de informații (steganografie) în imagini.
+Detection of hidden information (steganography) in images.
 
-Tehnici implementate:
-1. LSB Analysis (Least Significant Bit) - detectează modificări în biții LSB
-2. Chi-Square Attack - analiză statistică pentru LSB embedding
-3. RS Analysis (Regular-Singular) - detectează LSB cu precizie mare
-4. Sample Pair Analysis (SPA) - metodă avansată pentru LSB
-5. Histogram Analysis - detectează anomalii în histogramă
-6. DCT Analysis - pentru steganografie JPEG (F5, OutGuess)
-7. Visual Attack - vizualizare a planurilor de biți
-8. Noise Residual Analysis - detectează pattern-uri nenaturale
+Implemented techniques:
+1. LSB Analysis (Least Significant Bit) - detects modifications in LSB bits
+2. Chi-Square Attack - statistical analysis for LSB embedding
+3. RS Analysis (Regular-Singular) - detects LSB with high precision
+4. Sample Pair Analysis (SPA) - advanced method for LSB
+5. Histogram Analysis - detects anomalies in the histogram
+6. DCT Analysis - for JPEG steganography (F5, OutGuess)
+7. Visual Attack - visualization of bit planes
+8. Noise Residual Analysis - detects unnatural patterns
 
-Referințe:
+References:
 - Fridrich et al. (2001): "Detecting LSB Steganography in Color and Gray-Scale Images"
 - Dumitrescu et al. (2003): "Detection of LSB Steganography via Sample Pair Analysis"
 - Westfeld & Pfitzmann (1999): "Attacks on Steganographic Systems"
@@ -126,14 +126,14 @@ class StegDetectionReport:
 
 class LSBAnalyzer:
     """
-    Analiză LSB (Least Significant Bit) pentru detectarea steganografiei.
+    LSB (Least Significant Bit) analysis for steganography detection.
 
-    LSB este cea mai comună metodă de steganografie:
-    - Ascunde date în cel mai puțin semnificativ bit al fiecărui pixel
-    - Modificările sunt imperceptibile pentru ochiul uman
-    - Dar lasă urme statistice detectabile
+    LSB is the most common steganography method:
+    - Hides data in the least significant bit of each pixel
+    - Modifications are imperceptible to the human eye
+    - But leaves detectable statistical traces
 
-    Referințe:
+    References:
     - Westfeld & Pfitzmann (1999): "Attacks on Steganographic Systems"
     """
 
@@ -325,14 +325,14 @@ class LSBAnalyzer:
 
 class ChiSquareAnalyzer:
     """
-    Chi-Square Attack pentru detectarea LSB steganografiei.
+    Chi-Square Attack for LSB steganography detection.
 
-    Principiu:
-    - În imagini naturale, valorile de pixel 2n și 2n+1 au frecvențe diferite
-    - După LSB embedding, aceste perechi tind să aibă frecvențe egale
-    - Chi-square test detectează această "aplatizare"
+    Principle:
+    - In natural images, pixel values 2n and 2n+1 have different frequencies
+    - After LSB embedding, these pairs tend to have equal frequencies
+    - Chi-square test detects this "flattening"
 
-    Referințe:
+    References:
     - Westfeld & Pfitzmann (1999): "Attacks on Steganographic Systems"
     """
 
@@ -475,20 +475,20 @@ class ChiSquareAnalyzer:
 
 class RSAnalyzer:
     """
-    RS Analysis (Regular-Singular) pentru detectarea LSB steganografiei.
+    RS Analysis (Regular-Singular) for LSB steganography detection.
 
-    Principiu:
-    - Împarte imaginea în grupuri de pixeli
-    - Aplică funcția de "flipping" și măsoară "smoothness"
-    - Grupurile sunt clasificate ca Regular, Singular sau Unusable
-    - Relația între R, S, R*, S* indică embedding
+    Principle:
+    - Divides the image into pixel groups
+    - Applies the "flipping" function and measures "smoothness"
+    - Groups are classified as Regular, Singular, or Unusable
+    - The relationship between R, S, R*, S* indicates embedding
 
-    Avantaje:
-    - Poate estima lungimea mesajului
-    - Funcționează chiar și pentru embedding parțial
-    - Mai robust decât chi-square
+    Advantages:
+    - Can estimate message length
+    - Works even for partial embedding
+    - More robust than chi-square
 
-    Referințe:
+    References:
     - Fridrich et al. (2001): "Reliable Detection of LSB Steganography"
     """
 
@@ -695,18 +695,18 @@ class RSAnalyzer:
 
 class SPAAnalyzer:
     """
-    Sample Pair Analysis pentru detectarea LSB steganografiei.
+    Sample Pair Analysis for LSB steganography detection.
 
-    Principiu:
-    - Analizează perechi de pixeli adiacenți
-    - Clasifică perechile în funcție de diferența lor
-    - Estimează rata de embedding din distribuția perechilor
+    Principle:
+    - Analyzes pairs of adjacent pixels
+    - Classifies pairs based on their difference
+    - Estimates embedding rate from pair distribution
 
-    Avantaje:
-    - Foarte precis pentru embedding rates mici
-    - Funcționează pentru imagini de orice dimensiune
+    Advantages:
+    - Very accurate for small embedding rates
+    - Works for images of any size
 
-    Referințe:
+    References:
     - Dumitrescu et al. (2003): "Detection of LSB Steganography via Sample Pair Analysis"
     """
 
@@ -837,14 +837,14 @@ class SPAAnalyzer:
 
 class HistogramAnalyzer:
     """
-    Analiză histogramă pentru detectarea steganografiei.
+    Histogram analysis for steganography detection.
 
-    Principiu:
-    - LSB embedding "netezește" histograma
-    - Perechile de valori consecutive devin mai egale
-    - Pattern-uri nenaturale în distribuție
+    Principle:
+    - LSB embedding "smooths" the histogram
+    - Consecutive value pairs become more equal
+    - Unnatural patterns in the distribution
 
-    Detectează:
+    Detects:
     - Pairs of Values (PoV) attack
     - Histogram shifting
     """
@@ -975,16 +975,16 @@ class HistogramAnalyzer:
 
 class DCTAnalyzer:
     """
-    Analiză DCT pentru detectarea steganografiei JPEG.
+    DCT analysis for JPEG steganography detection.
 
-    Detectează:
-    - JSteg: ascunde date în coeficienți DCT LSB
-    - F5: folosește matrix embedding
-    - OutGuess: evită modificări detectabile
+    Detects:
+    - JSteg: hides data in DCT coefficient LSBs
+    - F5: uses matrix embedding
+    - OutGuess: avoids detectable modifications
 
-    Principiu:
-    - Analizează distribuția coeficienților DCT
-    - Detectează anomalii în coeficienții AC
+    Principle:
+    - Analyzes the distribution of DCT coefficients
+    - Detects anomalies in AC coefficients
     """
 
     def __init__(self):
@@ -1135,13 +1135,13 @@ class DCTAnalyzer:
 
 class VisualAttackAnalyzer:
     """
-    Visual Attack - vizualizare a planurilor de biți.
+    Visual Attack - visualization of bit planes.
 
-    Nu este o metodă de detectare automată, ci generează imagini
-    ale planurilor de biți pentru inspecție vizuală.
+    This is not an automatic detection method, but generates images
+    of bit planes for visual inspection.
 
-    LSB plane-ul unei imagini cu steganografie arată pattern-uri
-    regulate sau "noise" diferit de cel natural.
+    The LSB plane of an image with steganography shows regular
+    patterns or "noise" different from natural noise.
     """
 
     def __init__(self):
