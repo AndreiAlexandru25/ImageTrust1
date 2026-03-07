@@ -105,3 +105,23 @@ desktop.ini
 secrets.yaml
 *.pem
 *.key
+
+# Archives (binary, not for git)
+*.zip
+*.rar
+*.7z
+*.7z.*
+
+# Paper (not for GitHub)
+paper/
+publicatie/
+publicatie_overleaf/
+GHID_DEZVOLTARE.md
+
+# Personal screenshots and test images in web/
+web/*.png
+web/*.jpg
+web/*.jpeg
+web/*.PNG
+web/*.JPG
+web/*.JPEG

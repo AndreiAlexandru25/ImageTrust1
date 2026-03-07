@@ -23,6 +23,7 @@ class DetectionVerdict(str, Enum):
     AI_GENERATED = "ai_generated"
     MANIPULATED = "manipulated"
     UNCERTAIN = "uncertain"
+    SCREENSHOT = "screenshot"
 
 
 class Confidence(str, Enum):

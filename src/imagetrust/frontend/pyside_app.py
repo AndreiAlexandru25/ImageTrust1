@@ -271,9 +271,11 @@ class AnalysisWorker(QThread):
     error = Signal(str)
     progress = Signal(str)
     detector_ready = Signal(object)  # passes detector back to main thread
+    pub_engine_ready = Signal(object)  # passes publication engine back
 
     def __init__(self, detector, image: Image.Image, image_bytes: bytes,
-                 image_path: str, settings: dict, kaggle_path: str = None):
+                 image_path: str, settings: dict, kaggle_path: str = None,
+                 pub_engine=None):
         super().__init__()
         self.detector = detector
         self.image = image
@@ -281,6 +283,7 @@ class AnalysisWorker(QThread):
         self.image_path = image_path
         self.settings = settings
         self.kaggle_path = kaggle_path
+        self.pub_engine = pub_engine
 
     def run(self):
         try:
@@ -366,6 +369,64 @@ class AnalysisWorker(QThread):
                 logger_msg = f"Forensics analysis failed: {e}\n{traceback.format_exc()}"
                 # Don't fail the whole analysis for forensics errors
                 result["forensics_error"] = str(e)
+
+            # --- Patch-level AI localization ---
+            self.progress.emit("Running patch-level localization...")
+            try:
+                from imagetrust.detection.patch_localizer import (
+                    localize_ai_regions,
+                )
+                loc_result = localize_ai_regions(
+                    self.image, patch_size=128, stride=64,
+                )
+                if not loc_result.get("skipped"):
+                    result["localization"] = {
+                        "heatmap_base64": loc_result["heatmap_base64"],
+                        "overlay_base64": loc_result["overlay_base64"],
+                        "grid_shape": loc_result["grid_shape"],
+                        "hot_regions": loc_result["hot_regions"],
+                        "mean_ai_prob": loc_result["mean_ai_prob"],
+                        "max_ai_prob": loc_result["max_ai_prob"],
+                        "n_patches": loc_result["n_patches"],
+                        "n_models_used": loc_result["n_models_used"],
+                        "processing_time_ms": loc_result["processing_time_ms"],
+                    }
+                else:
+                    result["localization"] = None
+            except Exception as e:
+                result["localization"] = None
+                result["localization_error"] = str(e)
+
+            # --- Phase 2 publication-grade meta-classifier ---
+            self.progress.emit("Running Phase 2 meta-classifier...")
+            try:
+                # Lazy-init engine if not provided
+                if self.pub_engine is None:
+                    from imagetrust.detection.publication_engine import (
+                        PublicationInferenceEngine,
+                    )
+                    self.pub_engine = PublicationInferenceEngine()
+                    self.pub_engine_ready.emit(self.pub_engine)
+
+                # Extract HF results for reference attachment
+                hf_results = [
+                    r for r in result.get("individual_results", [])
+                    if r.get("method", "").startswith("ML:")
+                    and "calibrated" not in r.get("method", "").lower()
+                    and "Ensemble" not in r.get("method", "")
+                    and "Custom Trained" not in r.get("method", "")
+                ]
+
+                pub_pred = self.pub_engine.analyze(
+                    self.image,
+                    cal_ensemble=result.get("calibrated_ensemble"),
+                    hf_results=hf_results,
+                    source_info=result.get("source_info"),
+                )
+                result["publication"] = pub_pred
+            except Exception as e:
+                result["publication"] = None
+                result["publication_error"] = str(e)
 
             self.finished.emit(result)
         except Exception as exc:
@@ -501,6 +562,14 @@ class VerdictBanner(QFrame):
             color = _COLORS["danger"]
             icon_text = "!"
             label = "AI-Generated"
+        elif verdict == "manipulated":
+            color = _COLORS["warning"]
+            icon_text = "!!"
+            label = "Manipulated / Edited"
+        elif verdict == "screenshot":
+            color = "#6366F1"
+            icon_text = "SS"
+            label = "Screenshot / Screen Capture"
         elif verdict == "real":
             color = _COLORS["success"]
             icon_text = "OK"
@@ -569,6 +638,7 @@ class ImageTrustWindow(QMainWindow):
         self._result: Optional[Dict[str, Any]] = None
         self._worker: Optional[AnalysisWorker] = None
         self._detector = None  # lazy-loaded
+        self._pub_engine = None  # lazy-loaded Phase 2 publication engine
 
         self._build_ui()
         self._setup_statusbar()
@@ -799,8 +869,69 @@ class ImageTrustWindow(QMainWindow):
         self._threshold_label.setWordWrap(True)
         layout.addWidget(self._threshold_label)
 
-        # Calibrated CNN Ensemble section
-        cnn_group = QGroupBox("Calibrated CNN Ensemble (3 Models + Temperature Scaling)")
+        # ── Phase 2 Meta-Classifier section ──
+        phase2_group = QGroupBox("Publication Model (Phase 2 Meta-Classifier)")
+        p2_layout = QVBoxLayout(phase2_group)
+
+        # Tier indicator
+        self._tier_label = QLabel("Tier: Waiting for analysis...")
+        self._tier_label.setStyleSheet(
+            f"font-size: 12px; color: {_COLORS['info']}; padding: 2px 4px;"
+        )
+        self._tier_label.setWordWrap(True)
+        p2_layout.addWidget(self._tier_label)
+
+        # Meta-classifier P(AI)
+        p2_prob_row = QHBoxLayout()
+        p2_prob_row.addWidget(QLabel("Meta-Classifier P(AI):"))
+        self._phase2_prob_label = QLabel("—")
+        self._phase2_prob_label.setStyleSheet(
+            f"font-size: 18px; font-weight: bold; color: {_COLORS['text_primary']};"
+        )
+        p2_prob_row.addWidget(self._phase2_prob_label)
+        p2_prob_row.addStretch()
+        p2_layout.addLayout(p2_prob_row)
+
+        # Conformal prediction set
+        p2_conf_row = QHBoxLayout()
+        p2_conf_row.addWidget(QLabel("Prediction Set:"))
+        self._conformal_set_label = QLabel("—")
+        self._conformal_set_label.setStyleSheet(
+            f"font-size: 12px; color: {_COLORS['text_secondary']};"
+        )
+        p2_conf_row.addWidget(self._conformal_set_label)
+        self._coverage_badge = QLabel("")
+        self._coverage_badge.setStyleSheet(
+            f"font-size: 11px; color: {_COLORS['success']}; "
+            f"border: 1px solid {_COLORS['success']}; border-radius: 4px; "
+            f"padding: 1px 6px;"
+        )
+        p2_conf_row.addWidget(self._coverage_badge)
+        p2_conf_row.addStretch()
+        p2_layout.addLayout(p2_conf_row)
+
+        # NIQE quality score
+        p2_niqe_row = QHBoxLayout()
+        p2_niqe_row.addWidget(QLabel("NIQE Quality:"))
+        self._niqe_label = QLabel("—")
+        self._niqe_label.setStyleSheet(
+            f"font-size: 12px; color: {_COLORS['text_secondary']};"
+        )
+        p2_niqe_row.addWidget(self._niqe_label)
+        p2_niqe_row.addStretch()
+        p2_layout.addLayout(p2_niqe_row)
+
+        # Backbone status
+        self._backbone_status = QLabel("Backbones: waiting for analysis")
+        self._backbone_status.setStyleSheet(
+            f"font-size: 11px; color: {_COLORS['text_muted']}; padding: 2px 4px;"
+        )
+        self._backbone_status.setWordWrap(True)
+        p2_layout.addWidget(self._backbone_status)
+        layout.addWidget(phase2_group)
+
+        # ── CNN Ensemble (Reference) ──
+        cnn_group = QGroupBox("CNN Ensemble (Reference)")
         cnn_layout = QVBoxLayout(cnn_group)
 
         self._cnn_table = QTableWidget()
@@ -830,8 +961,8 @@ class ImageTrustWindow(QMainWindow):
         cnn_layout.addWidget(self._ensemble_info)
         layout.addWidget(cnn_group)
 
-        # Per-model results table (all methods)
-        table_group = QGroupBox("All Detection Methods")
+        # Per-model results table (HuggingFace reference)
+        table_group = QGroupBox("HuggingFace Models (Reference)")
         tg_layout = QVBoxLayout(table_group)
 
         self._results_table = QTableWidget()
@@ -853,8 +984,10 @@ class ImageTrustWindow(QMainWindow):
         tg_layout.addWidget(self._results_table)
         layout.addWidget(table_group)
 
-        # Forensics Analysis section (screenshot, platform, compression)
-        forensics_group = QGroupBox("Forensic Analysis (Source & Provenance)")
+        # Forensic Evidence (independent — does not affect ML prediction)
+        forensics_group = QGroupBox(
+            "Forensic Evidence (Independent \u2014 does not affect ML prediction)"
+        )
         fg_layout = QVBoxLayout(forensics_group)
 
         self._forensics_table = QTableWidget()
@@ -938,6 +1071,10 @@ class ImageTrustWindow(QMainWindow):
         self.statusBar().showMessage(
             f"Models loaded on {device.upper()}  |  Analysis running..."
         )
+
+    def _on_pub_engine_ready(self, engine):
+        """Cache publication engine after first lazy-init in worker."""
+        self._pub_engine = engine
 
     @staticmethod
     def _find_model() -> Optional[str]:
@@ -1047,10 +1184,12 @@ class ImageTrustWindow(QMainWindow):
             self._detector, self._image, self._image_bytes,
             self._image_path, settings,
             kaggle_path=self._find_model(),
+            pub_engine=self._pub_engine,
         )
         self._worker.finished.connect(self._on_analysis_done)
         self._worker.error.connect(self._on_analysis_error)
         self._worker.detector_ready.connect(self._on_detector_ready)
+        self._worker.pub_engine_ready.connect(self._on_pub_engine_ready)
         self._worker.progress.connect(
             lambda msg: self._progress_label.setText(msg)
         )
@@ -1063,15 +1202,16 @@ class ImageTrustWindow(QMainWindow):
         self._analyze_btn.setEnabled(True)
         self._export_json_btn.setEnabled(True)
 
-        # Combined verdict: multi-signal fusion
-        # Sources: CNN ensemble, HuggingFace models, forensics authenticity
+        # ── Publication-grade verdict (replaces ad-hoc max() fusion) ──
+        # Forensics NEVER modifies ai_prob. Displayed as independent evidence.
+        pub = result.get("publication")
         cal_ens = result.get("calibrated_ensemble")
         score = result.get("score_info", {})
         elapsed = result.get("elapsed_s", 0)
         indiv = result.get("individual_results", [])
         forensics = result.get("forensics")
 
-        # Extract HuggingFace model probabilities (not CNN, not signal)
+        # HF probabilities (for reference display only)
         hf_entries = [
             r for r in indiv
             if r.get("method", "").startswith("ML:")
@@ -1084,70 +1224,198 @@ class ImageTrustWindow(QMainWindow):
         hf_ai_max = max(hf_probs) if hf_probs else 0.5
         hf_ai_votes = sum(1 for p in hf_probs if p > 0.5)
 
-        # Debug: log per-model outputs
-        for r in hf_entries:
-            print(f"  [HF] {r.get('method', '?')}: P(AI)={r['ai_probability']:.4f}")
-        print(f"  [HF] avg={hf_ai_avg:.4f}  max={hf_ai_max:.4f}  votes={hf_ai_votes}/{len(hf_probs)}")
-
-        # Forensics authenticity signal (0=definitely not authentic, 1=authentic)
-        forensics_authenticity = 1.0
-        if forensics and isinstance(forensics, dict):
-            forensics_authenticity = forensics.get("authenticity_score", 1.0)
-            print(f"  [Forensics] authenticity={forensics_authenticity:.4f}  "
-                  f"label={forensics.get('primary_label', '?')}")
-
+        # CNN ensemble prob (for reference display only)
+        cnn_prob = None
         if cal_ens and cal_ens.get("calibrated_probs"):
-            if cal_ens["strategy"] == "min":
+            if cal_ens.get("strategy") == "min":
                 cnn_prob = cal_ens["ensemble_min_prob"]
             else:
                 cnn_prob = cal_ens["ensemble_avg_prob"]
-            low_t = cal_ens["uncertain_low"]
-            high_t = cal_ens["uncertain_high"]
-            print(f"  [CNN] prob={cnn_prob:.4f}  thresholds=[{low_t:.2f}, {high_t:.2f}]")
 
-            # Multi-signal fusion:
-            # 1. max(CNN, HF_avg) as base
-            # 2. If any single HF model is very confident (>0.7), use that
-            # 3. If forensics says low authenticity, boost the AI signal
-            ai_prob = max(cnn_prob, hf_ai_avg, hf_ai_max * 0.9)
-
-            # Forensics boost: if authenticity is very low, it's suspicious
-            if forensics_authenticity < 0.3:
-                # Low authenticity = likely not a real camera photo
-                # Boost AI probability: blend with (1 - authenticity)
-                forensic_ai_signal = 1.0 - forensics_authenticity
-                ai_prob = max(ai_prob, ai_prob * 0.5 + forensic_ai_signal * 0.5)
-                print(f"  [Fusion] forensics boost: ai_prob -> {ai_prob:.4f}")
-
-            print(f"  [Fusion] final ai_prob={ai_prob:.4f}")
-
-            # Three-way classification on combined probability
-            if ai_prob >= high_t:
-                verdict = "ai_generated"
-            elif ai_prob < low_t:
-                verdict = "real"
-            else:
-                verdict = "uncertain"
-
-            # Safety: if CNN and HF strongly disagree, mark uncertain
-            # But NOT if forensics also flags it
-            if abs(cnn_prob - hf_ai_avg) > 0.50 and forensics_authenticity > 0.5:
-                verdict = "uncertain"
+        # Determine verdict using publication engine (tiered)
+        # Phase 2 ai_prob is NEVER modified by forensics.
+        # BUT: forensics manipulation labels CAN override verdict.
+        if pub and hasattr(pub, "tier_used"):
+            ai_prob = pub.ai_probability
+            verdict = pub.verdict
+            print(f"  [Pub] tier={pub.tier_used} P(AI)={ai_prob:.4f} "
+                  f"verdict={verdict} set={pub.prediction_set}")
         else:
-            # Fallback: no CNN ensemble, use HF + score_info
-            cnn_prob = None
+            # Legacy fallback: no publication engine available
             ai_prob = score.get("ai_prob", result.get("ai_probability", 0.5))
             verdict = self._calibrated_verdict(ai_prob, score)
-            low_t, high_t = 0.34, 0.54
+            print(f"  [Legacy] P(AI)={ai_prob:.4f} verdict={verdict}")
+
+        # ── Manipulation override ──
+        # Phase 2 answers: "Is this fully AI-generated?"
+        # Forensics answers: "Has this been locally edited/tampered?"
+        # If Phase 2 says "real" but forensics detects manipulation -> "manipulated"
+        manipulation_detected = False
+        manipulation_evidence = []
+        if forensics and isinstance(forensics, dict) and forensics.get("labels"):
+            for lb in forensics["labels"]:
+                label_name = lb.get("label", "")
+                label_prob = lb.get("probability", 0)
+                # Pixel-level manipulation: local_tamper or edited (NOT social_media)
+                if label_name == "local_tamper_suspected" and label_prob > 0.4:
+                    manipulation_detected = True
+                    manipulation_evidence.append(
+                        f"local_tamper={label_prob:.0%}"
+                    )
+                if label_name == "edited_likely" and label_prob > 0.5:
+                    manipulation_detected = True
+                    manipulation_evidence.append(
+                        f"edited={label_prob:.0%}"
+                    )
+
+        if manipulation_detected and verdict == "real":
+            verdict = "manipulated"
+            print(f"  [Override] Forensics manipulation detected: "
+                  f"{', '.join(manipulation_evidence)} -> verdict=manipulated")
+        elif manipulation_detected and verdict == "uncertain":
+            verdict = "manipulated"
+            print(f"  [Override] Forensics confirms manipulation: "
+                  f"{', '.join(manipulation_evidence)} -> verdict=manipulated")
+
+        # Also check: very low authenticity + HF signal -> suspicious
+        # Key: primary_verdict (not primary_label) from forensics dict
+        # Benign primaries: social media processing, metadata stripping,
+        # camera original, recompression — NOT evidence of manipulation
+        _BENIGN_PRIMARIES = {
+            "social_media_likely", "metadata_stripped",
+            "camera_original_likely", "recompressed_likely",
+        }
+        forensics_auth = 1.0
+        forensics_primary = ""
+        if forensics and isinstance(forensics, dict):
+            forensics_auth = forensics.get("authenticity_score", 1.0)
+            forensics_primary = forensics.get("primary_verdict", "")
+
+        is_benign_source = forensics_primary in _BENIGN_PRIMARIES
+
+        if (verdict == "real"
+                and forensics_auth < 0.20
+                and not is_benign_source
+                and any(p > 0.5 for p in hf_probs)):
+            verdict = "manipulated"
+            manipulation_detected = True
+            manipulation_evidence.append(
+                f"authenticity={forensics_auth:.0%}, "
+                f"primary={forensics_primary}, "
+                f"HF_max={hf_ai_max:.0%}"
+            )
+            print(f"  [Override] Low authenticity + HF signal: "
+                  f"auth={forensics_auth:.2f} primary={forensics_primary} "
+                  f"HF_max={hf_ai_max:.2f} -> verdict=manipulated")
+        elif (verdict == "real"
+                and forensics_auth < 0.20
+                and not is_benign_source):
+            verdict = "uncertain"
+            print(f"  [Override] Very low authenticity ({forensics_auth:.2f}) "
+                  f"primary={forensics_primary} -> verdict=uncertain")
+
+        # HF models disagree with Phase 2 "real" — graduated override
+        if verdict == "real" and len(hf_probs) >= 2:
+            hf_vote_ratio = hf_ai_votes / len(hf_probs)
+
+            if hf_ai_avg > 0.70 and hf_vote_ratio >= 0.75:
+                # Strong HF consensus for AI — override to ai_generated
+                verdict = "ai_generated"
+                ai_prob = max(ai_prob, hf_ai_avg * 0.85)
+                print(f"  [Override] Strong HF consensus overrides Phase 2: "
+                      f"avg={hf_ai_avg:.2f} votes={hf_ai_votes}/{len(hf_probs)} "
+                      f"-> verdict=ai_generated, ai_prob={ai_prob:.4f}")
+            elif hf_ai_avg > 0.55 and hf_vote_ratio >= 0.50:
+                # Moderate HF signal — override to uncertain
+                verdict = "uncertain"
+                ai_prob = max(ai_prob, (ai_prob + hf_ai_avg) / 2)
+                print(f"  [Override] HF models disagree with Phase 2: "
+                      f"avg={hf_ai_avg:.2f} votes={hf_ai_votes}/{len(hf_probs)} "
+                      f"-> verdict=uncertain, ai_prob={ai_prob:.4f}")
+
+        # Screenshot detection (runs on the image heuristics)
+        try:
+            from imagetrust.detection.screenshot_detector import detect_screenshot
+            exif_d = None
+            fmt = None
+            if self._image_path:
+                fmt = str(self._image_path).rsplit(".", 1)[-1].upper()
+            ss_filename = os.path.basename(self._image_path or "")
+            ss = detect_screenshot(
+                self._image, exif_data=exif_d, file_format=fmt,
+                filename=ss_filename,
+            )
+            if ss.is_screenshot and ss.probability > 0.55 and ai_prob < 0.75:
+                verdict = "screenshot"
+                print(f"  [Override] Screenshot detected: prob={ss.probability:.2f} "
+                      f"indicators={ss.indicators}")
+            elif ss.is_screenshot and ss.probability > 0.45 and ai_prob < 0.5:
+                verdict = "screenshot"
+                print(f"  [Override] Screenshot likely: prob={ss.probability:.2f}")
+        except Exception as e:
+            print(f"  [Screenshot] detection error: {e}")
+
+        # Signal analysis override: when Phase 2 says "real" but signal
+        # analysis and/or metadata strongly suggest AI editing/generation.
+        # This catches partial edits (inpainting, outpainting) that global
+        # classifiers miss because most pixels are still "real".
+        if verdict == "real" and score:
+            signal_avg = score.get("signal_avg", 0.5)
+            score_combined = score.get("combined", 0.5)
+            filename_lower = os.path.basename(
+                self._image_path or ""
+            ).lower()
+            has_ai_filename = any(
+                kw in filename_lower
+                for kw in ["chatgpt", "dall-e", "dalle", "midjourney",
+                            "stable_diffusion", "firefly", "copilot"]
+            )
+
+            if has_ai_filename and signal_avg > 0.45:
+                # Filename from AI tool + signal confirmation
+                verdict = "ai_generated"
+                ai_prob = max(ai_prob, score_combined, 0.70)
+                print(f"  [Override] AI filename + signal: "
+                      f"file={filename_lower} signal_avg={signal_avg:.2f} "
+                      f"-> verdict=ai_generated, ai_prob={ai_prob:.4f}")
+            elif signal_avg > 0.60:
+                # Strong signal analysis alone (freq/noise detect edits
+                # that global ML classifiers miss on partial edits)
+                verdict = "uncertain"
+                ai_prob = max(ai_prob, signal_avg * 0.7)
+                print(f"  [Override] Signal analysis detects anomalies: "
+                      f"signal_avg={signal_avg:.2f} "
+                      f"-> verdict=uncertain, ai_prob={ai_prob:.4f}")
+            elif score_combined > 0.55 and signal_avg > 0.50:
+                # Moderate combined + signal evidence
+                verdict = "uncertain"
+                ai_prob = max(ai_prob, score_combined * 0.8)
+                print(f"  [Override] Combined signals override Phase 2: "
+                      f"combined={score_combined:.2f} signal_avg={signal_avg:.2f} "
+                      f"-> verdict=uncertain, ai_prob={ai_prob:.4f}")
 
         real_prob = 1.0 - ai_prob
 
+        # Debug: log reference signals
+        for r in hf_entries:
+            print(f"  [HF ref] {r.get('method', '?')}: P(AI)={r['ai_probability']:.4f}")
+        if cnn_prob is not None:
+            print(f"  [CNN ref] prob={cnn_prob:.4f}")
+        if manipulation_evidence:
+            print(f"  [Forensics] manipulation: {', '.join(manipulation_evidence)}")
+
         subtitle = f"Analysis completed in {elapsed:.1f}s"
-        if hf_probs and cal_ens:
-            subtitle += (f"  |  CNN={cnn_prob:.0%} HF-avg={hf_ai_avg:.0%}"
-                         f" HF-max={hf_ai_max:.0%}")
-        if forensics_authenticity < 0.5:
-            subtitle += f"  |  Authenticity={forensics_authenticity:.0%}"
+        if pub and hasattr(pub, "tier_used"):
+            tier_short = {
+                "phase2_xgboost": "Phase 2 XGBoost",
+                "cnn_ensemble": "CNN Ensemble",
+                "hf_fallback": "HF Fallback",
+            }.get(pub.tier_used, pub.tier_used)
+            subtitle += f"  |  {tier_short}"
+            if pub.inference_time_ms > 0:
+                subtitle += f" ({pub.inference_time_ms:.0f}ms)"
+        if manipulation_detected:
+            subtitle += f"  |  Forensic manipulation: {', '.join(manipulation_evidence)}"
         if result.get("uncertainty"):
             unc = result["uncertainty"]
             if unc.get("should_abstain"):
@@ -1155,27 +1423,107 @@ class ImageTrustWindow(QMainWindow):
 
         self._verdict_banner.set_verdict(verdict, ai_prob, subtitle)
 
+        # ── Update Phase 2 Meta-Classifier UI panel ──
+        if pub and hasattr(pub, "tier_used"):
+            tier_color = {
+                "phase2_xgboost": _COLORS["success"],
+                "cnn_ensemble": _COLORS["warning"],
+                "hf_fallback": _COLORS["danger"],
+            }.get(pub.tier_used, _COLORS["text_muted"])
+            self._tier_label.setText(
+                f"Tier: {pub.tier_used}  —  {pub.tier_reason}"
+            )
+            self._tier_label.setStyleSheet(
+                f"font-size: 12px; color: {tier_color}; padding: 2px 4px;"
+            )
+
+            prob_color = (
+                _COLORS["danger"] if ai_prob >= 0.54
+                else _COLORS["success"] if ai_prob < 0.34
+                else _COLORS["warning"]
+            )
+            self._phase2_prob_label.setText(f"{ai_prob:.4f}")
+            self._phase2_prob_label.setStyleSheet(
+                f"font-size: 18px; font-weight: bold; color: {prob_color};"
+            )
+
+            set_str = ", ".join(
+                s.replace("_", " ").title() for s in sorted(pub.prediction_set)
+            )
+            self._conformal_set_label.setText(f"{{{set_str}}}")
+            if pub.conformal_coverage > 0:
+                self._coverage_badge.setText(
+                    f"{pub.conformal_coverage:.1%} coverage"
+                )
+                self._coverage_badge.show()
+            else:
+                self._coverage_badge.setText("No conformal guarantee")
+                self._coverage_badge.setStyleSheet(
+                    f"font-size: 11px; color: {_COLORS['text_muted']}; "
+                    f"border: 1px solid {_COLORS['text_muted']}; "
+                    f"border-radius: 4px; padding: 1px 6px;"
+                )
+
+            if pub.niqe_score is not None:
+                self._niqe_label.setText(f"{pub.niqe_score:.2f}")
+            else:
+                self._niqe_label.setText("N/A")
+
+            if pub.tier_used == "phase2_xgboost" and self._pub_engine:
+                names = self._pub_engine.phase2.backbone_names
+                checks = "  ".join(f"\u2713 {n}" for n in names)
+                self._backbone_status.setText(f"Backbones: {checks}")
+                self._backbone_status.setStyleSheet(
+                    f"font-size: 11px; color: {_COLORS['success']}; padding: 2px 4px;"
+                )
+            else:
+                self._backbone_status.setText(
+                    f"Backbones: not used (tier={pub.tier_used})"
+                )
+        else:
+            self._tier_label.setText("Tier: Publication engine unavailable")
+            self._phase2_prob_label.setText(f"{ai_prob:.4f}")
+            self._conformal_set_label.setText("N/A")
+            self._coverage_badge.setText("")
+            self._niqe_label.setText("N/A")
+            self._backbone_status.setText("Backbones: not loaded")
+
         # Confidence bars
-        self._ai_bar.setValue(int(ai_prob * 100))
+        self._ai_bar.setValue(round(ai_prob * 100))
         self._ai_pct.setText(f"{ai_prob:.1%}")
-        self._real_bar.setValue(int(real_prob * 100))
+        self._real_bar.setValue(round(real_prob * 100))
         self._real_pct.setText(f"{real_prob:.1%}")
 
         unc_score = 0.0
         if result.get("uncertainty"):
             unc_score = result["uncertainty"].get("score", 0.0)
-        self._unc_bar.setValue(int(unc_score * 100))
+        self._unc_bar.setValue(round(unc_score * 100))
         self._unc_pct.setText(f"{unc_score:.1%}")
 
-        # Threshold info
-        self._threshold_label.setText(
-            f"Calibrated on 160,705 validation samples (1,000 bootstrap)  |  "
-            f"UNCERTAIN region: [{low_t:.2f}, {high_t:.2f}]  |  "
-            f"Strategy: {cal_ens.get('strategy', 'min') if cal_ens else 'default'}  |  "
-            f"Confident accuracy: 99.5%"
-        )
+        # Threshold info (dynamic based on tier)
+        if pub and hasattr(pub, "tier_used") and pub.tier_used == "phase2_xgboost":
+            self._threshold_label.setText(
+                "Phase 2 XGBoost (604,589 samples, seed=42) | "
+                "AUC=96.0% Acc=88.7% ECE=1.64% | "
+                "Conformal: LAC \u03b1=0.05 threshold=0.7652 | "
+                "WhatsApp Acc=88.6%"
+            )
+        elif pub and hasattr(pub, "tier_used") and pub.tier_used == "cnn_ensemble":
+            self._threshold_label.setText(
+                "CNN Ensemble fallback | "
+                "Calibrated on 160,705 validation samples | "
+                f"Strategy: {cal_ens.get('strategy', 'avg') if cal_ens else 'avg'}"
+            )
+        else:
+            self._threshold_label.setText(
+                f"Calibrated on 160,705 validation samples (1,000 bootstrap)  |  "
+                f"Strategy: {cal_ens.get('strategy', 'min') if cal_ens else 'default'}  |  "
+                f"Confident accuracy: 99.5%"
+            )
 
-        # CNN Ensemble table
+        # CNN Ensemble table (reference — not used for final verdict)
+        cnn_low_t = cal_ens.get("uncertain_low", 0.34) if cal_ens else 0.34
+        cnn_high_t = cal_ens.get("uncertain_high", 0.54) if cal_ens else 0.54
         self._cnn_table.setRowCount(0)
         if cal_ens and cal_ens.get("calibrated_probs"):
             raw = cal_ens.get("raw_probs", {})
@@ -1207,9 +1555,9 @@ class ImageTrustWindow(QMainWindow):
 
                 cal_item = QTableWidgetItem(f"{cal_p:.4f}")
                 cal_item.setTextAlignment(Qt.AlignCenter)
-                if cal_p >= high_t:
+                if cal_p >= cnn_high_t:
                     cal_item.setForeground(QColor(_COLORS["danger"]))
-                elif cal_p < low_t:
+                elif cal_p < cnn_low_t:
                     cal_item.setForeground(QColor(_COLORS["success"]))
                 else:
                     cal_item.setForeground(QColor(_COLORS["warning"]))
@@ -1497,6 +1845,23 @@ class ImageTrustWindow(QMainWindow):
             "source_info": self._result.get("source_info"),
         }
 
+        # Publication prediction (Phase 2 meta-classifier)
+        pub = self._result.get("publication")
+        if pub and hasattr(pub, "tier_used"):
+            report["publication_prediction"] = {
+                "ai_probability": pub.ai_probability,
+                "verdict": pub.verdict,
+                "prediction_set": sorted(pub.prediction_set),
+                "conformal_coverage": pub.conformal_coverage,
+                "is_uncertain": pub.is_uncertain,
+                "tier_used": pub.tier_used,
+                "tier_reason": pub.tier_reason,
+                "niqe_score": pub.niqe_score,
+                "cnn_ensemble_prob": pub.cnn_ensemble_prob,
+                "hf_probs": pub.hf_probs,
+                "inference_time_ms": pub.inference_time_ms,
+            }
+
         try:
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(report, f, indent=2, default=str)
@@ -1531,6 +1896,16 @@ class ImageTrustWindow(QMainWindow):
         self._votes_label.setText("")
         self._time_label.setText("")
         self._threshold_label.setText("")
+        # Reset Phase 2 Meta-Classifier panel
+        self._tier_label.setText("Tier: Waiting for analysis...")
+        self._tier_label.setStyleSheet(
+            f"font-size: 12px; color: {_COLORS['info']}; padding: 2px 4px;"
+        )
+        self._phase2_prob_label.setText("\u2014")
+        self._conformal_set_label.setText("\u2014")
+        self._coverage_badge.setText("")
+        self._niqe_label.setText("\u2014")
+        self._backbone_status.setText("Backbones: waiting for analysis")
         for v in self._detail_labels.values():
             v.setText("-")
         self.statusBar().showMessage("Ready  |  Load an image to begin")

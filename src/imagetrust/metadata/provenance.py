@@ -103,13 +103,16 @@ class ProvenanceAnalyzer:
         
         # Validate C2PA
         provenance.c2pa = self.c2pa_validator.validate(image_data)
-        c2pa_indicators = self.c2pa_validator.get_trust_indicators(provenance.c2pa)
+        if hasattr(self.c2pa_validator, 'get_trust_indicators'):
+            c2pa_indicators = self.c2pa_validator.get_trust_indicators(provenance.c2pa)
+        else:
+            c2pa_indicators = []
         
         # Aggregate metadata presence
         metadata.has_metadata = bool(
             metadata.exif.raw_data or
             metadata.xmp.raw_data or
-            provenance.c2pa.is_present
+            getattr(provenance.c2pa, 'has_c2pa', False)
         )
         
         # Collect AI indicators
@@ -132,18 +135,23 @@ class ProvenanceAnalyzer:
         confidence = 0.5
         
         # C2PA is the strongest indicator
-        if provenance.c2pa.is_valid:
+        c2pa = provenance.c2pa
+        c2pa_valid = getattr(c2pa, 'has_c2pa', False) and getattr(c2pa, 'trust_score', 0) > 50
+        c2pa_present = getattr(c2pa, 'has_c2pa', False)
+
+        if c2pa_valid:
             provenance.status = ProvenanceStatus.VERIFIED
             provenance.trust_indicators.extend(c2pa_indicators)
-            provenance.claimed_creator = provenance.c2pa.claim_generator
-            provenance.creation_date = provenance.c2pa.creation_time
+            provenance.claimed_creator = getattr(c2pa, 'ai_generator', None)
+            creation = getattr(c2pa, 'creation_info', {})
+            provenance.creation_date = creation.get('date') if creation else None
             confidence += 0.4
-        
-        elif provenance.c2pa.is_present:
+
+        elif c2pa_present:
             provenance.status = ProvenanceStatus.TAMPERED
             provenance.warning_indicators.append("Invalid C2PA signature")
             confidence -= 0.3
-        
+
         else:
             # No C2PA, rely on other metadata
             if metadata.has_metadata:

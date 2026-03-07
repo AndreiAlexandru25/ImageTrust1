@@ -166,15 +166,24 @@ def compute_combined_score(
         combined = (ml_avg * 0.70 + signal_avg * 0.20 + vote_ratio * 0.10)
         weights = {"ml": "70%", "signal": "20%", "vote": "10%"}
 
-    # Social-media stabilization: reduce false positives
+    # Social-media stabilization: reduce false positives (graduated penalty)
     if calibration_applied and ml_probs:
         ml_spread = max(ml_probs) - min(ml_probs)
-        if ml_spread > 0.6 and ml_avg < 0.60:
+        ml_ai_votes_strong = sum(1 for p in ml_probs if p > 0.60)
+        ml_ai_votes_any = sum(1 for p in ml_probs if p > 0.50)
+
+        if ml_ai_votes_strong >= 3 and ml_avg >= 0.65:
+            # Strong ML consensus for AI — trust the models, mild discount
+            combined = combined * 0.90
+        elif ml_ai_votes_any >= 2 and ml_avg >= 0.50:
+            # Moderate signal — discount but don't kill it
+            combined = combined * 0.75
+        elif ml_spread > 0.6 and ml_avg < 0.45:
+            # Models disagree AND lean real — cap moderately
             combined = min(combined, 0.35)
-        ml_ai_votes = sum(1 for p in ml_probs if p > 0.70)
-        strong_ai = ml_ai_votes >= 3 and ml_avg >= 0.70
-        if not strong_ai:
-            combined = min(combined, 0.20)
+        else:
+            # Weak AI signal on compressed image — discount
+            combined = combined * 0.60
 
     return {
         "combined": combined,

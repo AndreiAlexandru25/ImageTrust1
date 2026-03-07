@@ -337,13 +337,13 @@ class GradCAMAnalyzer:
     def _describe_region(self, activation: float) -> str:
         """Generate human-readable description of region."""
         if activation > 0.8:
-            return "Highly suspicious - strong AI artifacts detected"
+            return "Very high model attention - key decision region"
         elif activation > 0.6:
-            return "Moderately suspicious - possible AI generation"
+            return "High model attention - contributing to classification"
         elif activation > 0.4:
-            return "Slightly suspicious - minor anomalies"
+            return "Moderate model attention - minor influence"
         else:
-            return "Low suspicion - appears natural"
+            return "Low model attention - minimal influence"
 
 
 class GradCAMPlusPlus(GradCAMAnalyzer):

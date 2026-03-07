@@ -1,18 +1,21 @@
 # ImageTrust
 
-**AI-Generated Image Detection with Calibrated Uncertainty and Multi-Backbone Fusion**
+**Heterogeneous Backbone Fusion for AI-Generated Image Detection with Calibrated Uncertainty Quantification**
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.x-red.svg)](https://pytorch.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-14-black.svg)](https://nextjs.org/)
 
-ImageTrust is a forensic application for detecting AI-generated and digitally manipulated images. It uses a multi-backbone embedding fusion approach (ResNet-50 + EfficientNet-B0 + ViT-B/16) with XGBoost and MLP meta-classifiers, temperature-scaled calibration, and conformal prediction for uncertainty quantification.
+ImageTrust is a forensic framework for detecting AI-generated and digitally manipulated images. It uses heterogeneous backbone fusion (ResNet-50 + EfficientNet-B0 + ViT-B/16) with XGBoost and MLP meta-classifiers, temperature-scaled calibration, and conformal prediction for uncertainty quantification.
 
-Developed as a Master's thesis project at the intersection of computer vision, image forensics, and machine learning.
+Developed as a Master's thesis project at **West University of Timișoara**, Faculty of Mathematics and Computer Science.
+
+Submitted to **CISIS 2026** (International Conference on Computational Intelligence in Security for Information Systems).
 
 ---
 
-## Download & Run (Windows)
+## Download & Run (Windows Desktop)
 
 **No Python installation required.**
 
@@ -30,6 +33,61 @@ On first launch, the application downloads pre-trained HuggingFace models (~2 GB
 - 8 GB RAM minimum (16 GB recommended)
 - NVIDIA GPU with CUDA support (optional, improves speed)
 - Internet connection for first launch (model download)
+
+---
+
+## Web Application
+
+ImageTrust also includes a full web interface built with Next.js and a FastAPI backend.
+
+### Quick Start
+
+**1. Start the backend (FastAPI):**
+
+```bash
+cd imagetrust
+pip install -e ".[dev]"
+make run
+# or: uvicorn imagetrust.api.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+The API server starts at `http://localhost:8000`. Interactive docs available at `http://localhost:8000/docs`.
+
+**2. Start the frontend (Next.js):**
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+The web interface starts at `http://localhost:3000`.
+
+**3. Open `http://localhost:3000` in your browser.**
+
+### Web Features
+
+- Drag & drop image upload
+- Real-time analysis with progress tracking
+- Verdict display (Real / AI-Generated / Uncertain) with calibrated confidence
+- Per-model breakdown (CNN ensemble, HuggingFace models, signal analysis)
+- Grad-CAM heatmaps and patch localisation
+- EXIF metadata and C2PA provenance inspection
+- Forensic report export (JSON)
+- Dark/light theme
+
+### Architecture
+
+```
+Browser (localhost:3000)  -->  Next.js Frontend  -->  FastAPI Backend (localhost:8000)
+                                   |                        |
+                              Zustand store           Multi-tier detection
+                              Radix UI + Tailwind     Phase 2 meta-classifiers
+                              Framer Motion           HuggingFace models
+                                                      Forensics engine
+```
+
+In development, Next.js proxies `/api/*` requests to `localhost:8000` automatically.
 
 ---
 
@@ -61,15 +119,15 @@ Multi-backbone fusion improves AUC by +0.3--1.3% over single-backbone baselines.
 
 The system is robust to social media compression with <0.3% AUC drop.
 
-### Cross-Generator Evaluation (33 Generators)
+### Cross-Generator Evaluation (24 Generators)
 
-Evaluated on 33 unseen generators from the GenImage artifacts dataset (5,000 images per generator). The model was NOT trained on these generators -- this tests zero-shot generalization.
+Evaluated on 24 unseen generators from the GenImage dataset (5,000 images per generator). The model was NOT trained on these generators -- this tests zero-shot generalisation.
 
 **Detected well (>50% TPR):** StarGAN (69%), Denoising DiffGAN (66%), Palette (62%), StyleGAN3 (42%)
 
 **Not detected (<5% TPR):** CycleGAN, DDPM, ProGAN, BigGAN, GLIDE, Latent Diffusion, VQ-Diffusion
 
-This is expected behavior -- the meta-classifier learns embedding-space patterns from its training generators and does not generalize to all architectures. Cross-generator generalization remains an open research problem.
+This is expected behaviour -- the meta-classifier learns embedding-space patterns from its training generators and does not generalise to all architectures. Cross-generator generalisation remains an open research problem.
 
 ### Statistical Significance
 
@@ -83,7 +141,7 @@ DeLong test: dAUC=-0.003, p=1.0 (not significant on AUC -- both models are compe
 | ResNet-50 embedding | 4.3 ms/image |
 | EfficientNet-B0 embedding | 5.5 ms/image |
 | ViT-B/16 embedding | 4.2 ms/image |
-| **Total pipeline** | **14.3 ms/image** |
+| **Total pipeline** | **14.3 ms/image (70 img/s)** |
 
 Measured on NVIDIA RTX 5080 (16 GB VRAM), batch size 256, mixed precision.
 
@@ -103,12 +161,11 @@ Phase 2: Meta-Classifier Training
   -> Temperature scaling calibration
   -> Conformal prediction (LAC/APS/RAPS)
 
-Phase 3: Publication Pipeline
-  -> Single-backbone baselines (honest comparison)
-  -> Degradation robustness evaluation
-  -> Cross-source evaluation
-  -> Statistical significance tests
-  -> 8 publication figures + 7 LaTeX tables
+Phase 3: Forensic System
+  Tier 1: Phase 2 XGBoost + LAC conformal (threshold=0.7652, coverage=95.19%)
+  Tier 2: Calibrated CNN ensemble (3 backbones, temperature-scaled)
+  Tier 3: 4 HuggingFace models + 5 signal analysers (FFT, noise, texture, edge, colour)
+  + Copy-move detection, Grad-CAM, EXIF/XMP, C2PA provenance, screenshot detection
 ```
 
 ---
@@ -118,23 +175,29 @@ Phase 3: Publication Pipeline
 ```
 imagetrust/
 ├── src/imagetrust/              # Main source code
+│   ├── api/                     # FastAPI REST API (routes, middleware)
 │   ├── core/                    # Config, types, exceptions
 │   ├── detection/               # ML detection (multi_detector, calibration, models)
 │   ├── evaluation/              # Metrics, ablation, cross-generator, degradation
 │   ├── explainability/          # Grad-CAM, patch analysis, frequency
-│   ├── forensics/               # Forensics engine
-│   ├── frontend/                # PySide6 desktop app, Streamlit web UI
+│   ├── forensics/               # 12+ forensic plugins (ELA, noise, JPEG, etc.)
+│   ├── frontend/                # PySide6 desktop application
 │   ├── metadata/                # EXIF, XMP, C2PA provenance
 │   ├── reporting/               # PDF/JSON/HTML forensic reports
 │   ├── baselines/               # Classical, CNN, ViT baselines
 │   └── cli.py                   # Click-based CLI
+├── web/                         # Next.js web frontend
+│   ├── src/app/                 # Pages (home, analysis)
+│   ├── src/components/          # UI components (upload, verdict, heatmaps)
+│   ├── src/stores/              # Zustand state management
+│   └── src/lib/                 # API client, types, utils
 ├── scripts/orchestrator/        # Training & evaluation pipelines
 │   ├── run_phase1_pipeline.py   # Phase 1: embedding extraction
 │   ├── run_phase2_training.py   # Phase 2: meta-classifier training
 │   ├── run_phase3_publication.py # Phase 3: figures, tables, paper
-│   └── run_cross_generator_eval.py # Cross-generator evaluation
+│   └── run_cross_generator_eval.py
 ├── configs/                     # YAML configuration
-├── paper/                       # LaTeX paper template
+├── paper/                       # LaTeX paper (CISIS 2026)
 ├── tests/                       # Unit + integration tests
 ├── ImageTrust.spec              # PyInstaller spec for .exe build
 └── requirements.txt             # Python dependencies
@@ -147,6 +210,7 @@ imagetrust/
 ### Prerequisites
 
 - Python 3.10--3.12
+- Node.js 18+ (for web frontend)
 - NVIDIA GPU with CUDA 12.x (for training; CPU works for inference)
 - 16 GB RAM minimum for training
 
@@ -156,27 +220,31 @@ imagetrust/
 git clone https://github.com/AndreiAlexandru25/ImageTrust.git
 cd imagetrust
 
+# Backend
 python -m venv .venv
 .venv\Scripts\activate        # Windows
 # source .venv/bin/activate   # Linux/Mac
-
 pip install -e ".[dev]"
+
+# Frontend
+cd web
+npm install
 ```
 
 ### CLI Commands
 
 ```bash
-# Analyze a single image
+# Analyse a single image
 imagetrust analyze photo.jpg
-
-# Start Streamlit web UI
-imagetrust ui
 
 # Launch desktop app (PySide6)
 imagetrust desktop
 
 # Start API server
 imagetrust serve --port 8000
+
+# Start Streamlit web UI (legacy)
+imagetrust ui
 ```
 
 ### Running Tests
@@ -212,27 +280,53 @@ python scripts/orchestrator/run_embedding_extraction.py \
 # Phase 2: Train meta-classifiers (XGBoost + MLP)
 python scripts/orchestrator/run_phase2_training.py
 
-# Phase 3: Generate all paper artifacts (figures + tables)
+# Phase 3: Generate all paper artefacts (figures + tables)
 python scripts/orchestrator/run_phase3_publication.py
 
-# Cross-generator evaluation (requires GenImage artifacts dataset)
+# Cross-generator evaluation (requires GenImage dataset)
 python scripts/orchestrator/run_cross_generator_eval.py
 ```
 
-All experiments use fixed seeds (42, 123, 7) for reproducibility. Hardware: RTX 5080, AMD 7800X3D, 32 GB RAM.
+All experiments use fixed seeds (42, 123, 7) for reproducibility. Hardware: RTX 5080, AMD Ryzen 7 7800X3D, 32 GB RAM.
+
+---
+
+## Future Work
+
+1. **Continual learning**: Experience replay or elastic weight consolidation to adapt to new generators (e.g., Flux, DALL-E 4) without catastrophic forgetting.
+
+2. **Adversarial robustness**: Adversarial training and input purification to defend against white-box evasion attacks targeting the embedding space.
+
+3. **C2PA-first filtering**: Images with valid C2PA provenance chains bypass ML detection entirely, reducing false positives for authenticated content.
+
+4. **Lightweight deployment**: Knowledge distillation to a single backbone for mobile/edge inference while preserving fusion benefits.
+
+5. **Video support**: Extend frame-level detection with temporal consistency analysis for deepfake video forensics.
+
+---
+
+## Limitations
+
+- No adversarial evaluation performed; the system has not been tested against targeted evasion attacks.
+- Zero-shot cross-generator generalisation averages 17--20% TPR across unseen architectures.
+- Domain bias towards faces and natural scenes; performance on medical, satellite, or artistic images is untested.
+- False positives on synthetic-looking real photographs (SFHQ, MetFaces).
+- Performance may degrade for generators released after the training data cutoff.
 
 ---
 
 ## Citation
 
 ```bibtex
-@mastersthesis{imagetrust2026,
-  title={ImageTrust: A Heterogeneous Fusion Framework for AI-Generated Image Detection
-         with Calibrated Uncertainty and Multi-Label Forensic Verdicts},
-  author={Alexandru, Andrei},
-  year={2026},
-  school={University Name},
-  type={Master's Thesis}
+@inproceedings{iancu2026imagetrust,
+  title={ImageTrust: Heterogeneous Backbone Fusion for AI-Generated Image
+         Detection with Calibrated Uncertainty Quantification},
+  author={Iancu, Andrei-Alexandru and Gali\c{s}, Darius},
+  booktitle={Proceedings of the International Conference on Computational
+             Intelligence in Security for Information Systems (CISIS 2026)},
+  series={Lecture Notes in Networks and Telecommunications},
+  publisher={Springer},
+  year={2026}
 }
 ```
 

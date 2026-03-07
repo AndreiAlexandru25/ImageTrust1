@@ -14,8 +14,9 @@ from imagetrust.utils.logging import get_logger, setup_logging
 
 logger = get_logger(__name__)
 
-# Global detector instance
+# Global detector instances
 _detector = None
+_comprehensive_detector = None
 
 
 def get_detector():
@@ -28,6 +29,19 @@ def get_detector():
             model="ensemble" if settings.ensemble_enabled else settings.detector_backbone,
         )
     return _detector
+
+
+def get_comprehensive_detector():
+    """Get the global ComprehensiveDetector instance (singleton)."""
+    global _comprehensive_detector
+    if _comprehensive_detector is None:
+        from imagetrust.detection.multi_detector import ComprehensiveDetector
+        _comprehensive_detector = ComprehensiveDetector(
+            use_meta_classifier=True,
+            use_conformal=True,
+        )
+        logger.info("ComprehensiveDetector loaded (singleton)")
+    return _comprehensive_detector
 
 
 @asynccontextmanager

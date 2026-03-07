@@ -455,7 +455,7 @@ class MultiModelDetector:
         ("umm-maybe/AI-image-detector", "AI Image Detector"),
         # #3 - Alternative with different architecture
         ("Nahrawy/AIorNot", "AIorNot Detector"),
-        # #4 - NEW: Recent model from NYUAD (Jan 2025)
+        # #4 - Recent model from NYUAD (Jan 2025)
         ("NYUAD-ComNets/NYUAD_AI-generated_images_detector", "NYUAD Detector (2025)"),
     ]
     
