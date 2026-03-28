@@ -132,6 +132,8 @@ This installs all required packages (PyTorch, FastAPI, transformers, etc.). It m
 
 ---
 
+> **Note:** From this point on, all commands are identical on Windows, macOS, and Linux.
+
 ### Step 4: Verify Installation
 
 ```bash
