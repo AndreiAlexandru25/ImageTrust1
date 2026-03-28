@@ -549,22 +549,6 @@ The application works fine on CPU. CUDA is optional and only speeds up inference
 - False positives on synthetic-looking real photographs (SFHQ, MetFaces).
 - Performance may degrade for generators released after the training data cutoff.
 
----
-
-## Citation
-
-```bibtex
-@inproceedings{iancu2026imagetrust,
-  title={ImageTrust: Multi-Backbone Fusion for AI-Generated Image
-         Detection with Calibrated Uncertainty},
-  author={Iancu, Andrei-Alexandru and Gali\c{s}, Darius and Stefaniga, Sebastian-Aurelian},
-  booktitle={Proceedings of the International Conference on Computational
-             Intelligence in Security for Information Systems (CISIS 2026)},
-  series={Lecture Notes in Networks and Telecommunications},
-  publisher={Springer},
-  year={2026}
-}
-```
 
 ---
 
