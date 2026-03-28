@@ -222,8 +222,7 @@ class AlbumentationsPreprocessor:
         # Training transform (standard augmentation)
         self.train_transform = A.Compose([
             A.RandomResizedCrop(
-                height=self.input_size,
-                width=self.input_size,
+                size=(self.input_size, self.input_size),
                 scale=(0.8, 1.0),
                 p=1.0,
             ),
@@ -250,8 +249,7 @@ class AlbumentationsPreprocessor:
         # Heavy augmentation (for robustness training)
         self.heavy_transform = A.Compose([
             A.RandomResizedCrop(
-                height=self.input_size,
-                width=self.input_size,
+                size=(self.input_size, self.input_size),
                 scale=(0.7, 1.0),
                 p=1.0,
             ),

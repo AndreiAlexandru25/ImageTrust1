@@ -42,26 +42,26 @@ Please be respectful and constructive in all interactions. We welcome contributi
 
 ```bash
 # Fork the repository on GitHub, then:
-git clone https://github.com/YOUR_USERNAME/imagetrust.git
+git clone https://github.com/YOUR_USERNAME/ImageTrust.git
 cd imagetrust
 ```
 
 ### 2. Create Virtual Environment
 
 ```bash
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# or: venv\Scripts\activate  # Windows
+python -m venv .venv
+source .venv/bin/activate     # macOS / Linux
+# or: .venv\Scripts\activate  # Windows
 ```
 
 ### 3. Install Development Dependencies
 
 ```bash
 # Install in editable mode with dev dependencies
+pip install --upgrade pip
 pip install -e ".[dev]"
 
 # Install pre-commit hooks
-pip install pre-commit
 pre-commit install
 ```
 
@@ -69,11 +69,11 @@ pre-commit install
 
 ```bash
 # Run tests
-pytest tests/unit -v
+python -m pytest tests/unit -v
 
 # Run linting
-ruff check src/ tests/
-black --check src/ tests/
+python -m ruff check src/ tests/
+python -m black --check src/ tests/
 ```
 
 ---
@@ -89,8 +89,8 @@ We use automated tools to ensure consistent code style:
 
 ```bash
 # Format code
-black src/ tests/
-isort src/ tests/
+python -m black src/ tests/
+python -m isort src/ tests/
 ```
 
 ### Linting
@@ -100,10 +100,10 @@ isort src/ tests/
 
 ```bash
 # Lint code
-ruff check src/ tests/
+python -m ruff check src/ tests/
 
 # Type check (optional)
-mypy src/imagetrust
+python -m mypy src/imagetrust --ignore-missing-imports
 ```
 
 ### Pre-commit Hooks
@@ -164,19 +164,19 @@ git commit --no-verify
 
 ```bash
 # All tests
-pytest
+python -m pytest tests/ -v
 
 # Unit tests only
-pytest tests/unit
+python -m pytest tests/unit -v
 
 # Integration tests
-pytest tests/integration -m integration
+python -m pytest tests/integration -v -m integration
 
 # With coverage
-pytest --cov=imagetrust --cov-report=html
+python -m pytest tests/ --cov=imagetrust --cov-report=html
 
 # Skip slow tests
-pytest -m "not slow"
+python -m pytest tests/ -v -m "not slow"
 ```
 
 ### Writing Tests

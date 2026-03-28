@@ -69,14 +69,15 @@ class TestMcNemarTest:
         """Test with and without continuity correction."""
         from imagetrust.evaluation.statistical_tests import mcnemar_test
 
-        y_true = np.array([1, 1, 1, 0, 0, 0])
-        pred_a = np.array([1, 1, 0, 0, 0, 1])
-        pred_b = np.array([1, 0, 1, 1, 0, 0])
+        # Use data where n_01 != n_10 so correction reduces chi2
+        y_true = np.array([1, 1, 1, 0, 0, 0, 0, 0, 0, 0])
+        pred_a = np.array([1, 0, 0, 0, 0, 0, 0, 0, 1, 1])
+        pred_b = np.array([1, 1, 1, 0, 0, 0, 1, 0, 0, 0])
 
         result_with = mcnemar_test(y_true, pred_a, pred_b, continuity_correction=True)
         result_without = mcnemar_test(y_true, pred_a, pred_b, continuity_correction=False)
 
-        # With correction should have smaller chi2
+        # With correction should have smaller or equal chi2
         assert result_with.chi2_statistic <= result_without.chi2_statistic
 
 
@@ -94,7 +95,7 @@ class TestDeLongTest:
         result = delong_test(y_true, probs, probs)
 
         assert result.auc_difference == 0.0
-        assert result.significant is False
+        assert result.significant == False
 
     def test_different_aucs(self):
         """Test with clearly different AUCs."""
@@ -212,7 +213,7 @@ class TestPermutationTest:
         )
 
         assert result.observed_difference == 0.0
-        assert result.significant is False
+        assert result.significant == False
 
     def test_different_models(self):
         """Test with clearly different predictions."""

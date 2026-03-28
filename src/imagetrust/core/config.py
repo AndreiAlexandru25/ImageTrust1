@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     # Project Settings
     # ===========================================
     project_name: str = "ImageTrust"
-    project_version: str = "0.1.0"
+    project_version: str = "1.0.1"
     environment: Literal["development", "testing", "production"] = "development"
 
     # ===========================================

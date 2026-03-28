@@ -221,6 +221,7 @@ class TestCNNDetector:
     def test_cnn_detector_predict(self):
         """Test CNN detector prediction."""
         from imagetrust.detection.models.cnn_detector import CNNDetector
+        from imagetrust.detection.preprocessing import ImagePreprocessor
 
         detector = CNNDetector(
             backbone="resnet18",
@@ -230,8 +231,9 @@ class TestCNNDetector:
 
         # Create test image
         image = Image.new("RGB", (224, 224), color="red")
+        preprocessor = ImagePreprocessor(input_size=224)
 
-        result = detector.predict(image)
+        result = detector.predict(image, preprocessor=preprocessor)
 
         assert "ai_probability" in result
         assert "real_probability" in result

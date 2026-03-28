@@ -1,23 +1,49 @@
 # ImageTrust
 
-**Heterogeneous Backbone Fusion for AI-Generated Image Detection with Calibrated Uncertainty Quantification**
+**Multi-Backbone Fusion for AI-Generated Image Detection with Calibrated Uncertainty**
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.x-red.svg)](https://pytorch.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-14-black.svg)](https://nextjs.org/)
 
-ImageTrust is a forensic framework for detecting AI-generated and digitally manipulated images. It uses heterogeneous backbone fusion (ResNet-50 + EfficientNet-B0 + ViT-B/16) with XGBoost and MLP meta-classifiers, temperature-scaled calibration, and conformal prediction for uncertainty quantification.
+ImageTrust is a forensic framework for detecting AI-generated and digitally manipulated images. It uses multi-backbone fusion (ResNet-50 + EfficientNet-B0 + ViT-B/16) with XGBoost and MLP meta-classifiers, temperature-scaled calibration, and conformal prediction for uncertainty quantification.
 
-Developed as a Master's thesis project at **West University of Timișoara**, Faculty of Mathematics and Computer Science.
+Developed as a Master's thesis project at **West University of Timisoara**, Faculty of Mathematics and Computer Science.
 
 Submitted to **CISIS 2026** (International Conference on Computational Intelligence in Security for Information Systems).
 
 ---
 
-## Download & Run (Windows Desktop)
+## Table of Contents
 
-**No Python installation required.**
+1. [Download & Run (Windows .exe)](#download--run-windows-exe)
+2. [Installation from Source](#installation-from-source)
+   - [Prerequisites](#prerequisites)
+   - [Step 1: Clone the Repository](#step-1-clone-the-repository)
+   - [Step 2: Create Virtual Environment](#step-2-create-virtual-environment)
+   - [Step 3: Install Dependencies](#step-3-install-dependencies)
+   - [Step 4: Verify Installation](#step-4-verify-installation)
+3. [Running the Web Application](#running-the-web-application)
+   - [Step 5: Start the Backend API](#step-5-start-the-backend-api)
+   - [Step 6: Start the Web Frontend](#step-6-start-the-web-frontend)
+   - [Step 7: Open in Browser](#step-7-open-in-browser)
+4. [Running Tests](#running-tests)
+5. [CLI Usage](#cli-usage)
+6. [Web Application Features](#web-application-features)
+7. [Results](#results)
+8. [Architecture](#architecture)
+9. [Project Structure](#project-structure)
+10. [Reproducing Results](#reproducing-results)
+11. [Troubleshooting](#troubleshooting)
+12. [Citation](#citation)
+13. [License](#license)
+
+---
+
+## Download & Run (Windows .exe)
+
+**No Python or Node.js installation required.** This is the easiest way to try ImageTrust.
 
 1. Go to [Releases](https://github.com/AndreiAlexandru25/ImageTrust/releases)
 2. Download **both** files: `ImageTrust-v1.0.1-win64.7z.001` and `ImageTrust-v1.0.1-win64.7z.002`
@@ -27,33 +53,166 @@ Submitted to **CISIS 2026** (International Conference on Computational Intellige
 
 On first launch, the application downloads pre-trained HuggingFace models (~2 GB). Subsequent launches are instant.
 
-### System Requirements
-
-- Windows 10/11 (64-bit)
-- 8 GB RAM minimum (16 GB recommended)
-- NVIDIA GPU with CUDA support (optional, improves speed)
-- Internet connection for first launch (model download)
+**System Requirements:** Windows 10/11 (64-bit), 8 GB RAM minimum, internet for first launch.
 
 ---
 
-## Web Application
+## Installation from Source
 
-ImageTrust also includes a full web interface built with Next.js and a FastAPI backend.
+Follow these steps to install and run the full web application (backend + frontend) from source code. Instructions are provided for both **Windows** and **macOS/Linux**.
 
-### Quick Start
+### Prerequisites
 
-**1. Start the backend (FastAPI):**
+Install the following software **before** proceeding:
+
+| Software | Version | Windows | macOS |
+|----------|---------|---------|-------|
+| **Python** | 3.10, 3.11, or 3.12 | Download from [python.org](https://www.python.org/downloads/). **Important:** check "Add Python to PATH" during installation. | `brew install python@3.12` (requires [Homebrew](https://brew.sh/)) |
+| **Git** | any recent version | Download from [git-scm.com](https://git-scm.com/download/win) | Pre-installed on macOS. Or: `brew install git` |
+| **Node.js** | 18 or higher | Download LTS from [nodejs.org](https://nodejs.org/) | `brew install node` |
+
+**Optional:** NVIDIA GPU with CUDA improves inference speed but is **not required**. The application works on CPU.
+
+**Verify prerequisites** (open a terminal / Command Prompt):
 
 ```bash
-cd imagetrust
-pip install -e ".[dev]"
-make run
-# or: uvicorn imagetrust.api.main:app --reload --host 0.0.0.0 --port 8000
+python --version        # Should print Python 3.10.x, 3.11.x, or 3.12.x
+git --version           # Should print git version 2.x.x
+node --version          # Should print v18.x.x or higher
+npm --version           # Should print 9.x.x or higher
 ```
 
-The API server starts at `http://localhost:8000`. Interactive docs available at `http://localhost:8000/docs`.
+> **macOS note:** Use `python3` instead of `python` if `python` is not found.
 
-**2. Start the frontend (Next.js):**
+---
+
+### Step 1: Clone the Repository
+
+```bash
+git clone https://github.com/AndreiAlexandru25/ImageTrust.git
+cd ImageTrust
+```
+
+---
+
+### Step 2: Create Virtual Environment
+
+**Windows (Command Prompt or PowerShell):**
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+```
+
+**macOS / Linux (Terminal):**
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+After activation, your terminal prompt should show `(.venv)` at the beginning.
+
+---
+
+### Step 3: Install Dependencies
+
+```bash
+pip install --upgrade pip
+pip install -e ".[dev]"
+```
+
+This installs all required packages (PyTorch, FastAPI, transformers, etc.). It may take a few minutes.
+
+> **Apple Silicon Macs (M1/M2/M3/M4):** If the installation fails on PyTorch, run this first, then repeat the install:
+> ```bash
+> pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+> pip install -e ".[dev]"
+> ```
+
+---
+
+### Step 4: Verify Installation
+
+```bash
+python -c "import imagetrust; print(imagetrust.__version__)"
+```
+
+**Expected output:**
+
+```
+1.0.1
+```
+
+If you see `1.0.1`, the installation was successful. You can also run:
+
+```bash
+imagetrust info
+```
+
+**Expected output** (details may vary):
+
+```
+ImageTrust System Information
+   Version: 1.0.1
+   Environment: development
+
+PyTorch
+   Version: 2.x.x
+   CUDA Available: True/False
+   ...
+```
+
+---
+
+## Running the Web Application
+
+The web application has two parts that run in **two separate terminals**:
+- **Backend** (Python/FastAPI) -- serves the AI detection API on port 8000
+- **Frontend** (Next.js) -- serves the web interface on port 3000
+
+### Step 5: Start the Backend API
+
+Make sure your virtual environment is activated (you should see `(.venv)` in your prompt).
+
+```bash
+imagetrust serve --port 8000
+```
+
+**First launch:** The system downloads pre-trained HuggingFace models (~2 GB). This happens only once.
+
+**Expected output** (after model loading):
+
+```
+INFO:     Started server process [...]
+INFO:     Waiting for application startup.
+INFO:     Starting ImageTrust API...
+INFO:     Detector loaded successfully
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+```
+
+**Keep this terminal open.** The backend must stay running while you use the web application.
+
+**Verify the API is running** -- open a new terminal and run:
+
+```bash
+curl http://localhost:8000/health
+```
+
+**Expected output:**
+
+```json
+{"status":"healthy"}
+```
+
+You can also open http://localhost:8000/docs in your browser to see the interactive API documentation (Swagger UI).
+
+---
+
+### Step 6: Start the Web Frontend
+
+Open a **second terminal** (keep the backend running in the first one).
 
 ```bash
 cd web
@@ -61,11 +220,91 @@ npm install
 npm run dev
 ```
 
-The web interface starts at `http://localhost:3000`.
+`npm install` downloads frontend dependencies (only needed the first time). `npm run dev` starts the development server.
 
-**3. Open `http://localhost:3000` in your browser.**
+**Expected output:**
 
-### Web Features
+```
+  - ready started server on 0.0.0.0:3000, url: http://localhost:3000
+```
+
+---
+
+### Step 7: Open in Browser
+
+Open your browser and go to:
+
+**http://localhost:3000**
+
+You should see the ImageTrust web interface. To test it:
+
+1. Click "Upload Image" or drag and drop any image (JPEG, PNG)
+2. Wait for the analysis to complete (a few seconds)
+3. View the verdict: **Real**, **AI-Generated**, or **Uncertain**
+4. Explore the detailed results: per-model breakdown, Grad-CAM heatmaps, metadata, forensic report
+
+**To stop the application:** Press `Ctrl+C` in both terminals.
+
+---
+
+## Running Tests
+
+Make sure your virtual environment is activated. Run from the project root directory (not `web/`).
+
+```bash
+python -m pytest tests/ -v
+```
+
+**Expected output:**
+
+```
+========================= test session starts =========================
+...
+================ 142 passed, 1 skipped, XX warnings in XXs =============
+```
+
+All 142 tests should pass. Additional test commands:
+
+```bash
+# Unit tests only (faster, no model loading)
+python -m pytest tests/unit -v
+
+# Skip slow tests
+python -m pytest tests/ -v -m "not slow"
+
+# Tests with coverage report
+python -m pytest tests/ --cov=imagetrust --cov-report=term
+```
+
+---
+
+## CLI Usage
+
+ImageTrust includes a command-line interface for quick analysis without the web UI:
+
+```bash
+# Show system information
+imagetrust info
+
+# Analyse a single image
+imagetrust analyze path/to/image.jpg
+
+# Analyse all images in a directory
+imagetrust batch path/to/folder/
+
+# Start the API server
+imagetrust serve --port 8000
+
+# Launch desktop application (requires: pip install PySide6)
+imagetrust desktop
+
+# List all available commands
+imagetrust --help
+```
+
+---
+
+## Web Application Features
 
 - Drag & drop image upload
 - Real-time analysis with progress tracking
@@ -75,8 +314,9 @@ The web interface starts at `http://localhost:3000`.
 - EXIF metadata and C2PA provenance inspection
 - Forensic report export (JSON)
 - Dark/light theme
+- Responsive design
 
-### Architecture
+### Web Architecture
 
 ```
 Browser (localhost:3000)  -->  Next.js Frontend  -->  FastAPI Backend (localhost:8000)
@@ -93,46 +333,56 @@ In development, Next.js proxies `/api/*` requests to `localhost:8000` automatica
 
 ## Results
 
-Evaluated on 604,589 images across 4 compression variants (original, WhatsApp, Instagram, screenshot). Three random seeds, bootstrap 95% confidence intervals.
+Evaluated on 604,589 images across 4 compression variants (original, WhatsApp, Instagram, screenshot), with 90,692 test images. Three random seeds, bootstrap 95% confidence intervals.
 
 ### Main Comparison
 
-| Method | Accuracy | F1 | ROC-AUC | ECE |
-|--------|----------|-----|---------|-----|
-| LogReg (ResNet-50 emb.) | 0.870 | 0.839 | 0.939 [0.938, 0.940] | -- |
-| XGBoost (ResNet-50 emb.) | 0.885 | 0.854 | 0.956 [0.955, 0.957] | 0.022 |
-| XGBoost (EfficientNet-B0 emb.) | 0.881 | 0.848 | 0.953 [0.952, 0.954] | 0.024 |
-| XGBoost (ViT-B/16 emb.) | 0.880 | 0.846 | 0.950 [0.949, 0.951] | 0.027 |
-| **XGBoost (3-backbone fusion)** | **0.886** | **0.858** | **0.959** | **0.016** |
-| **MLP (3-backbone fusion)** | **0.890** | **0.865** | **0.963** | 0.036 |
+In-domain detection on 90,692 test images. All values in %.
 
-Multi-backbone fusion improves AUC by +0.3--1.3% over single-backbone baselines. MLP achieves the highest AUC (0.963) while XGBoost has the best calibration (ECE=0.016).
+| Method | Acc | Prec | Rec | F1 | AUC | ECE |
+|--------|-----|------|-----|-----|-----|-----|
+| Wang et al. (2020) | 61.6 | 62.1 | 7.5 | 13.4 | 68.6 | 0.364 |
+| Ojha et al. (2023) | 70.3 | 68.5 | 46.5 | 55.4 | 78.7 | 0.206 |
+| LogReg + ResNet-50 | 87.0 | 87.8 | 80.2 | 83.9 | 93.9 | 0.020 |
+| XGBoost + ResNet-50 | **90.5** | 94.0 | 83.3 | **88.3** | **96.4** | **0.011** |
+| XGBoost + EfficientNet-B0 | 90.1 | **94.1** | 82.3 | 87.8 | 96.1 | **0.011** |
+| XGBoost + ViT-B/16 | 89.4 | 93.3 | 81.4 | 86.9 | 95.6 | **0.011** |
+| **ImageTrust XGBoost (3-backbone)** | 88.7 | 90.5 | 81.9 | 85.9 | 96.0 | 0.016 |
+| **ImageTrust MLP (3-backbone)** | 89.1 | 88.4 | **85.2** | 86.8 | 96.3 | 0.039 |
+
+Multi-backbone fusion achieves the highest AUC (96.3%) and recall (85.2%). Single-backbone XGBoost + ResNet-50 has the best accuracy (90.5%) and calibration (ECE=0.011). Both ImageTrust models significantly outperform external baselines: +17.6% AUC and +31.4% F1 over Ojha et al.
 
 ### Degradation Robustness
 
-| Condition | XGBoost AUC | MLP AUC | Drop |
-|-----------|-------------|---------|------|
-| Original (clean) | 0.961 | 0.964 | -- |
-| WhatsApp compression | 0.958 | 0.961 | -0.003 |
-| Instagram pipeline | 0.961 | 0.964 | -0.000 |
-| Screenshot capture | 0.960 | 0.963 | -0.001 |
+Robustness to social-media compression (AUC %).
 
-The system is robust to social media compression with <0.3% AUC drop.
+| Method | Clean | WhatsApp | Instagram | Screenshot | Avg |
+|--------|-------|----------|-----------|------------|-----|
+| Wang et al. | 71.7 | 63.6 (-8.1) | 67.5 (-4.2) | 71.6 (-0.1) | 68.6 |
+| Ojha et al. | 79.9 | 76.6 (-3.3) | 78.4 (-1.5) | 79.9 (-0.0) | 78.7 |
+| LogReg + ResNet-50 | 94.1 | 93.7 (-0.4) | 94.0 (-0.2) | 93.8 (-0.4) | 93.9 |
+| XGB + ResNet-50 | 95.7 | 95.5 (-0.3) | 95.6 (-0.1) | 95.6 (-0.2) | 95.6 |
+| **IT (XGB)** | **96.1** | 95.8 (-0.3) | **96.1** (-0.1) | 96.0 (-0.1) | **96.0** |
+| **IT (MLP)** | **96.4** | **96.1** (-0.3) | **96.4** (-0.0) | **96.3** (-0.1) | **96.3** |
+
+ImageTrust degrades by at most -0.3% AUC under social media compression, compared to -8.1% for Wang et al. and -3.3% for Ojha et al.
 
 ### Cross-Generator Evaluation (24 Generators)
 
-Evaluated on 24 unseen generators from the GenImage dataset (5,000 images per generator). The model was NOT trained on these generators -- this tests zero-shot generalisation.
+Evaluated on 156,550 images from 24 unseen generators (GenImage dataset). The model was NOT trained on these generators -- this tests zero-shot generalisation. Best TPR shown (XGB or MLP).
 
-**Detected well (>50% TPR):** StarGAN (69%), Denoising DiffGAN (66%), Palette (62%), StyleGAN3 (42%)
+**Detected well (>40% TPR):** StarGAN (69.3% MLP), Denoising Diffusion GAN (65.9% XGB), Palette (61.9% XGB), StyleGAN3 (42.0% XGB)
 
 **Not detected (<5% TPR):** CycleGAN, DDPM, ProGAN, BigGAN, GLIDE, Latent Diffusion, VQ-Diffusion
+
+**Real image accuracy:** AFHQ 100.0%, Landscape 100.0%, LSUN 99.96%, ImageNet 99.92%, COCO 99.88%. False positives on synthetic-looking datasets: MetFaces (19.0%), SFHQ (3.0%).
 
 This is expected behaviour -- the meta-classifier learns embedding-space patterns from its training generators and does not generalise to all architectures. Cross-generator generalisation remains an open research problem.
 
 ### Statistical Significance
 
-McNemar test: chi2=20.76, p<0.001 (MLP significantly better on predictions).
-DeLong test: dAUC=-0.003, p=1.0 (not significant on AUC -- both models are competitive).
+McNemar test: chi2 = 20.76, p < 0.001 (MLP significantly better on individual predictions).
+DeLong test: p = 1.0 (not significant on AUC -- both models are competitive).
 
 ### Efficiency
 
@@ -151,13 +401,13 @@ Measured on NVIDIA RTX 5080 (16 GB VRAM), batch size 256, mixed precision.
 
 ```
 Phase 1: Embedding Extraction (GPU)
-  Image -> [ResNet-50 (2048-d)] + [EfficientNet-B0 (1280-d)] + [ViT-B/16 (768-d)] + [NIQE (1-d)]
-  -> Concatenated 4097-dimensional feature vector per image
+  Image -> [ResNet-50 (2048-d)] + [EfficientNet-B0 (1280-d)] + [ViT-B/16 (768-d)]
+  -> Concatenated 4,096-dimensional feature vector per image
   -> Applied to 4 variants: original, WhatsApp, Instagram, screenshot
 
 Phase 2: Meta-Classifier Training
-  4097-d features -> XGBoost (GPU-accelerated, 3 seeds)
-  4097-d features -> MLP (4097->1024->512->256->1, SWA, mixup, label smoothing)
+  4,096-d features -> XGBoost (GPU-accelerated, 3 seeds)
+  4,096-d features -> MLP (4096->1024->512->256->1, SWA, mixup, label smoothing)
   -> Temperature scaling calibration
   -> Conformal prediction (LAC/APS/RAPS)
 
@@ -173,7 +423,7 @@ Phase 3: Forensic System
 ## Project Structure
 
 ```
-imagetrust/
+ImageTrust/
 ├── src/imagetrust/              # Main source code
 │   ├── api/                     # FastAPI REST API (routes, middleware)
 │   ├── core/                    # Config, types, exceptions
@@ -192,75 +442,11 @@ imagetrust/
 │   ├── src/stores/              # Zustand state management
 │   └── src/lib/                 # API client, types, utils
 ├── scripts/orchestrator/        # Training & evaluation pipelines
-│   ├── run_phase1_pipeline.py   # Phase 1: embedding extraction
-│   ├── run_phase2_training.py   # Phase 2: meta-classifier training
-│   ├── run_phase3_publication.py # Phase 3: figures, tables, paper
-│   └── run_cross_generator_eval.py
 ├── configs/                     # YAML configuration
-├── paper/                       # LaTeX paper (CISIS 2026)
-├── tests/                       # Unit + integration tests
+├── tests/                       # Unit + integration tests (142 tests)
 ├── ImageTrust.spec              # PyInstaller spec for .exe build
+├── pyproject.toml               # Python package configuration
 └── requirements.txt             # Python dependencies
-```
-
----
-
-## Development Setup
-
-### Prerequisites
-
-- Python 3.10--3.12
-- Node.js 18+ (for web frontend)
-- NVIDIA GPU with CUDA 12.x (for training; CPU works for inference)
-- 16 GB RAM minimum for training
-
-### Installation
-
-```bash
-git clone https://github.com/AndreiAlexandru25/ImageTrust.git
-cd imagetrust
-
-# Backend
-python -m venv .venv
-.venv\Scripts\activate        # Windows
-# source .venv/bin/activate   # Linux/Mac
-pip install -e ".[dev]"
-
-# Frontend
-cd web
-npm install
-```
-
-### CLI Commands
-
-```bash
-# Analyse a single image
-imagetrust analyze photo.jpg
-
-# Launch desktop app (PySide6)
-imagetrust desktop
-
-# Start API server
-imagetrust serve --port 8000
-
-# Start Streamlit web UI (legacy)
-imagetrust ui
-```
-
-### Running Tests
-
-```bash
-pytest tests/ -v
-pytest tests/unit/ -v --fast     # Skip slow tests
-pytest --cov=imagetrust          # With coverage
-```
-
-### Building the .exe
-
-```bash
-pip install pyinstaller PySide6
-python scripts/build_desktop.py
-# Output: dist/ImageTrust/ImageTrust.exe
 ```
 
 ---
@@ -291,16 +477,64 @@ All experiments use fixed seeds (42, 123, 7) for reproducibility. Hardware: RTX 
 
 ---
 
+## Troubleshooting
+
+### `python` command not found (Windows)
+
+Re-install Python from [python.org](https://www.python.org/downloads/) and make sure to check **"Add Python to PATH"** during installation. Alternatively, try `python3` or `py` instead of `python`.
+
+### `python` command not found (macOS)
+
+Use `python3` instead of `python`:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+### PyTorch installation fails on Apple Silicon Mac
+
+```bash
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+pip install -e ".[dev]"
+```
+
+### `imagetrust` command not found
+
+Make sure your virtual environment is activated. You should see `(.venv)` in your terminal prompt. If not:
+
+```bash
+# Windows
+.venv\Scripts\activate
+
+# macOS / Linux
+source .venv/bin/activate
+```
+
+### Backend starts but frontend shows "Failed to fetch" or blank page
+
+Make sure the backend is running on port 8000 before starting the frontend. The frontend expects the API at `http://localhost:8000`.
+
+### `npm install` fails
+
+Make sure Node.js 18+ is installed: `node --version`. If you see an older version, update Node.js from [nodejs.org](https://nodejs.org/).
+
+### Tests fail with "httpx not installed"
+
+Run `pip install -e ".[dev]"` again -- httpx is included in dev dependencies.
+
+### CUDA not detected
+
+The application works fine on CPU. CUDA is optional and only speeds up inference. If you have an NVIDIA GPU, install the [CUDA Toolkit](https://developer.nvidia.com/cuda-downloads) matching your GPU.
+
+---
+
 ## Future Work
 
 1. **Continual learning**: Experience replay or elastic weight consolidation to adapt to new generators (e.g., Flux, DALL-E 4) without catastrophic forgetting.
-
 2. **Adversarial robustness**: Adversarial training and input purification to defend against white-box evasion attacks targeting the embedding space.
-
 3. **C2PA-first filtering**: Images with valid C2PA provenance chains bypass ML detection entirely, reducing false positives for authenticated content.
-
 4. **Lightweight deployment**: Knowledge distillation to a single backbone for mobile/edge inference while preserving fusion benefits.
-
 5. **Video support**: Extend frame-level detection with temporal consistency analysis for deepfake video forensics.
 
 ---
@@ -319,9 +553,9 @@ All experiments use fixed seeds (42, 123, 7) for reproducibility. Hardware: RTX 
 
 ```bibtex
 @inproceedings{iancu2026imagetrust,
-  title={ImageTrust: Heterogeneous Backbone Fusion for AI-Generated Image
-         Detection with Calibrated Uncertainty Quantification},
-  author={Iancu, Andrei-Alexandru and Gali\c{s}, Darius},
+  title={ImageTrust: Multi-Backbone Fusion for AI-Generated Image
+         Detection with Calibrated Uncertainty},
+  author={Iancu, Andrei-Alexandru and Gali\c{s}, Darius and Stefaniga, Sebastian-Aurelian},
   booktitle={Proceedings of the International Conference on Computational
              Intelligence in Security for Information Systems (CISIS 2026)},
   series={Lecture Notes in Networks and Telecommunications},

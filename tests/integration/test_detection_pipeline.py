@@ -245,7 +245,7 @@ class TestCalibrationIntegration:
             labels = np.array([0, 0, 1, 1, 1])
 
             calibrator.fit(probs, labels)
-            assert calibrator.is_fitted
+            assert calibrator._fitted
 
         except ImportError:
             pytest.skip("Calibration not available")
