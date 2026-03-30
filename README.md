@@ -74,7 +74,7 @@ npm --version           # Should print 9.x.x or higher
 ### Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/AndreiAlexandru25/ImageTrust.git
+git clone https://github.com/AndreiAlexandru25/ImageTrust1
 cd ImageTrust
 ```
 
