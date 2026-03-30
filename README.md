@@ -41,21 +41,6 @@ Submitted to **CISIS 2026** (International Conference on Computational Intellige
 
 ---
 
-## Download & Run (Windows .exe)
-
-**No Python or Node.js installation required.** This is the easiest way to try ImageTrust.
-
-1. Go to [Releases](https://github.com/AndreiAlexandru25/ImageTrust/releases)
-2. Download **both** files: `ImageTrust-v1.0.1-win64.7z.001` and `ImageTrust-v1.0.1-win64.7z.002`
-3. Place both files in the same folder
-4. Extract using [7-Zip](https://www.7-zip.org/) (right-click `.001` file -> 7-Zip -> Extract Here)
-5. Run `ImageTrust.exe`
-
-On first launch, the application downloads pre-trained HuggingFace models (~2 GB). Subsequent launches are instant.
-
-**System Requirements:** Windows 10/11 (64-bit), 8 GB RAM minimum, internet for first launch.
-
----
 
 ## Installation from Source
 
@@ -89,7 +74,7 @@ npm --version           # Should print 9.x.x or higher
 ### Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/AndreiAlexandru25/ImageTrust.git
+git clone (https://github.com/CS-Research-Group-UVT/imagetrust)
 cd ImageTrust
 ```
 
