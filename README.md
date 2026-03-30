@@ -53,7 +53,6 @@ Install the following software **before** proceeding:
 |----------|---------|---------|-------|
 | **Python** | 3.10, 3.11, or 3.12 | Download from [python.org](https://www.python.org/downloads/). **Important:** check "Add Python to PATH" during installation. | `brew install python@3.12` (requires [Homebrew](https://brew.sh/)) |
 | **Git** | any recent version | Download from [git-scm.com](https://git-scm.com/download/win) | Pre-installed on macOS. Or: `brew install git` |
-| **Git LFS** | any recent version | `git lfs install` (after installing Git) | `brew install git-lfs && git lfs install` |
 | **Node.js** | 18 or higher | Download LTS from [nodejs.org](https://nodejs.org/) | `brew install node` |
 
 **Optional:** NVIDIA GPU with CUDA improves inference speed but is **not required**. The application works on CPU.
@@ -77,15 +76,6 @@ npm --version           # Should print 9.x.x or higher
 git clone https://github.com/AndreiAlexandru25/ImageTrust1.git
 cd ImageTrust1
 ```
-
-> **Important:** This repository uses **Git LFS** for large model files (~300 MB). If you don't have Git LFS installed, the model files will be downloaded as small pointer files and the project will not work. To fix this:
-> ```bash
-> # Install Git LFS (one-time setup)
-> git lfs install
->
-> # Download the actual model files
-> git lfs pull
-> ```
 
 ---
 
