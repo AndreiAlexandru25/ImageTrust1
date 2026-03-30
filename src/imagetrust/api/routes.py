@@ -260,7 +260,7 @@ async def analyze_comprehensive(
                 ) if gc_result.heatmap is not None else ""
 
                 overlay_buf = _BytesIO()
-                gc_result.overlay.save(overlay_buf, format="PNG")
+                gc_result.overlay.convert("RGB").save(overlay_buf, format="JPEG", quality=75)
                 overlay_b64 = base64.b64encode(
                     overlay_buf.getvalue()
                 ).decode("utf-8")

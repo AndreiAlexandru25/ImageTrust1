@@ -340,9 +340,9 @@ def _create_overlay(
 
 
 def _image_to_base64(img: Image.Image) -> str:
-    """Encode PIL Image to base64 PNG string."""
+    """Encode PIL Image to base64 JPEG string."""
     buf = BytesIO()
-    img.save(buf, format="PNG")
+    img.convert("RGB").save(buf, format="JPEG", quality=75)
     return base64.b64encode(buf.getvalue()).decode("utf-8")
 
 
