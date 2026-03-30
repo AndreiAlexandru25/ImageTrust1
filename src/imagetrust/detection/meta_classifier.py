@@ -331,11 +331,14 @@ class NIQEComputer:
         self._piq_available = False
         try:
             import piq
-            self._piq_available = True
-            self._niqe = piq.NIQE()
-            self._brisque = piq.BRISQUE()
-            logger.info("PIQ library available for quality assessment")
-        except ImportError:
+            if hasattr(piq, "NIQE") and hasattr(piq, "BRISQUE"):
+                self._piq_available = True
+                self._niqe = piq.NIQE()
+                self._brisque = piq.BRISQUE()
+                logger.info("PIQ library available for quality assessment")
+            else:
+                logger.warning("PIQ library found but NIQE/BRISQUE not available. Using fallback.")
+        except Exception:
             logger.warning(
                 "PIQ library not available. Using fallback quality metrics. "
                 "Install with: pip install piq"
