@@ -17,8 +17,7 @@ Submitted to **CISIS 2026** (International Conference on Computational Intellige
 
 ## Table of Contents
 
-1. [Download & Run (Windows .exe)](#download--run-windows-exe)
-2. [Installation from Source](#installation-from-source)
+1. [Installation from Source](#installation-from-source)
    - [Prerequisites](#prerequisites)
    - [Step 1: Clone the Repository](#step-1-clone-the-repository)
    - [Step 2: Create Virtual Environment](#step-2-create-virtual-environment)
@@ -54,6 +53,7 @@ Install the following software **before** proceeding:
 |----------|---------|---------|-------|
 | **Python** | 3.10, 3.11, or 3.12 | Download from [python.org](https://www.python.org/downloads/). **Important:** check "Add Python to PATH" during installation. | `brew install python@3.12` (requires [Homebrew](https://brew.sh/)) |
 | **Git** | any recent version | Download from [git-scm.com](https://git-scm.com/download/win) | Pre-installed on macOS. Or: `brew install git` |
+| **Git LFS** | any recent version | `git lfs install` (after installing Git) | `brew install git-lfs && git lfs install` |
 | **Node.js** | 18 or higher | Download LTS from [nodejs.org](https://nodejs.org/) | `brew install node` |
 
 **Optional:** NVIDIA GPU with CUDA improves inference speed but is **not required**. The application works on CPU.
@@ -74,9 +74,18 @@ npm --version           # Should print 9.x.x or higher
 ### Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/AndreiAlexandru25/ImageTrust1
-cd ImageTrust
+git clone https://github.com/AndreiAlexandru25/ImageTrust1.git
+cd ImageTrust1
 ```
+
+> **Important:** This repository uses **Git LFS** for large model files (~300 MB). If you don't have Git LFS installed, the model files will be downloaded as small pointer files and the project will not work. To fix this:
+> ```bash
+> # Install Git LFS (one-time setup)
+> git lfs install
+>
+> # Download the actual model files
+> git lfs pull
+> ```
 
 ---
 
@@ -431,7 +440,7 @@ ImageTrust/
 ├── scripts/orchestrator/        # Training & evaluation pipelines
 ├── configs/                     # YAML configuration
 ├── tests/                       # Unit + integration tests (142 tests)
-├── ImageTrust.spec              # PyInstaller spec for .exe build
+├── .gitattributes               # Git LFS tracking configuration
 ├── pyproject.toml               # Python package configuration
 └── requirements.txt             # Python dependencies
 ```
