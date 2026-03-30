@@ -1,0 +1,35 @@
+{
+  "train": {
+    "n_samples": 423209,
+    "n_real": 245129,
+    "n_ai": 178080,
+    "variants": {
+      "instagram": 105802,
+      "original": 105803,
+      "screenshot": 105802,
+      "whatsapp": 105802
+    }
+  },
+  "val": {
+    "n_samples": 90688,
+    "n_real": 52528,
+    "n_ai": 38160,
+    "variants": {
+      "instagram": 22672,
+      "original": 22672,
+      "screenshot": 22672,
+      "whatsapp": 22672
+    }
+  },
+  "test": {
+    "n_samples": 90692,
+    "n_real": 52532,
+    "n_ai": 38160,
+    "variants": {
+      "instagram": 22673,
+      "original": 22673,
+      "screenshot": 22673,
+      "whatsapp": 22673
+    }
+  }
+}

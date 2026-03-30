@@ -1,0 +1,212 @@
+% ===== DISSERTATION CHAPTER STRUCTURE =====
+% Paste these \input lines in the main .tex file after \tableofcontents
+% Each cap*.tex file contains one chapter
+%
+% \tableofcontents
+% \input{cap1}  % Introduction
+% \input{cap2}  % Related Work
+% \input{cap3}  % Methodology
+% \input{cap4}  % Experimental Setup
+% \input{cap5}  % Results and Discussion
+% \input{cap6}  % Conclusions and Future Work
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%% cap1: Introduction %%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Introduction}\label{chap:intro}
+
+\section{Motivation and Problem Statement}\label{sec:motivation}
+
+\section{Research Objectives}\label{sec:objectives}
+
+\section{Main Contributions}\label{sec:contributions}
+\subsection{Calibrated Uncertainty Quantification}
+\subsection{Compression-Robust Multi-Backbone Fusion}
+\subsection{Comprehensive Evaluation Protocol}
+
+\section{Thesis Structure}\label{sec:structure}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%% cap2: Related Work %%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Related Work}\label{chap:related}
+
+\section{Evolution of Generative Models}\label{sec:gen-models}
+\subsection{Generative Adversarial Networks (GANs)}
+\subsection{Diffusion-Based Models}
+\subsection{Autoregressive Frameworks}
+
+\section{Existing Detection Approaches}\label{sec:detection-approaches}
+\subsection{Wang et al. -- ResNet-50 Trained on ProGAN}
+\subsection{Gragnaniello et al. -- Low-Level Artifact Preservation}
+\subsection{Ojha et al. -- Frozen CLIP Zero-Shot Transfer}
+\subsection{Corvi et al. -- GAN-to-Diffusion Detection Gap}
+\subsection{Cozzolino et al. -- Fine-Tuned CLIP Representations}
+\subsection{AEROBLADE -- Training-Free Detection}
+
+\section{Multi-Model and Ensemble Detection}\label{sec:ensemble}
+
+\section{Calibration and Uncertainty in Deep Learning}\label{sec:calib-related}
+\subsection{Miscalibration of Neural Networks}
+\subsection{Conformal Prediction: APS and RAPS}
+
+\section{Benchmark Datasets}\label{sec:datasets-related}
+\subsection{GenImage}
+\subsection{CIFAKE}
+\subsection{DiffusionDB}
+
+\section{Positioning of ImageTrust}\label{sec:positioning}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%% cap3: Methodology %%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Methodology}\label{chap:methodology}
+
+\section{System Architecture Overview}\label{sec:architecture}
+
+\section{Phase 1: Heterogeneous Backbone Fusion}\label{sec:fusion}
+\subsection{ResNet-50 Backbone}
+\subsection{EfficientNet-B0 Backbone}
+\subsection{ViT-B/16 Backbone}
+\subsection{Embedding Concatenation}
+
+\section{Phase 2: Meta-Classifiers}\label{sec:meta-clf}
+\subsection{XGBoost Meta-Classifier}
+\subsection{MLP Meta-Classifier}
+\subsection{Training Configuration and Regularization}
+
+\section{Calibration}\label{sec:calibration}
+\subsection{Temperature Scaling}
+\subsection{Platt Scaling}
+\subsection{Isotonic Regression}
+\subsection{Expected Calibration Error (ECE)}
+
+\section{Conformal Prediction and Uncertainty Quantification}\label{sec:conformal}
+\subsection{LAC (Least Ambiguous Set-Valued Classifiers)}
+\subsection{APS (Adaptive Prediction Sets)}
+\subsection{RAPS (Regularized APS)}
+\subsection{Abstention Mechanism}
+
+\section{End-to-End Forensic System}\label{sec:system}
+\subsection{Desktop Application (PySide6)}
+\subsection{Web Application (Next.js / FastAPI)}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%% cap4: Experimental Setup %%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Experimental Setup}\label{chap:setup}
+
+\section{Hardware Configuration}\label{sec:hardware}
+
+\section{Dataset Construction}\label{sec:dataset}
+\subsection{AI-Generated Sources}
+\subsection{Real Image Sources}
+\subsection{Compression Variants}
+\subsection{Embedding Extraction}
+
+\section{Data Splits and Sampling}\label{sec:splits}
+
+\section{Evaluation Metrics}\label{sec:metrics}
+\subsection{Accuracy, Precision, Recall, F1 Score}
+\subsection{ROC-AUC}
+\subsection{Expected Calibration Error}
+\subsection{Bootstrap Confidence Intervals}
+\subsection{McNemar's Test and DeLong's Test}
+
+\section{Baselines}\label{sec:baselines}
+\subsection{External Baselines}
+\subsection{Internal Baselines}
+
+\section{Reproducibility Protocol}\label{sec:reproducibility}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%% cap5: Results and Discussion %%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Results and Discussion}\label{chap:results}
+
+\section{Main Comparison (In-Domain Detection)}\label{sec:main-comparison}
+\subsection{External Baselines Analysis}
+\subsection{Internal Baselines vs. ImageTrust}
+\subsection{Statistical Significance Testing}
+\subsection{ROC Curve Analysis}
+
+\section{Degradation Robustness}\label{sec:degradation}
+\subsection{WhatsApp Compression Impact}
+\subsection{Instagram Compression Impact}
+\subsection{Screenshot Degradation Impact}
+
+\section{Cross-Generator Generalization}\label{sec:cross-gen}
+\subsection{GenImage Benchmark}
+\subsection{GAN Generators (12 Architectures)}
+\subsection{Diffusion Generators (8 Architectures)}
+\subsection{Inpainting Methods}
+\subsection{Real Image Source Analysis}
+\subsection{Detectable vs. Undetectable Generators}
+
+\section{Ablation Study}\label{sec:ablation}
+\subsection{Backbone Diversity Contribution}
+\subsection{Impact of Removing Individual Backbones}
+\subsection{Impact of Variant Augmentation}
+
+\section{Calibration Analysis}\label{sec:calib-results}
+\subsection{Temperature Scaling Results}
+\subsection{Platt Scaling vs. Isotonic Regression}
+\subsection{Reliability Diagrams}
+
+\section{Conformal Prediction Results}\label{sec:conformal-results}
+\subsection{LAC Performance}
+\subsection{APS and RAPS Analysis}
+
+\section{Efficiency Analysis}\label{sec:efficiency}
+\subsection{Training and Evaluation Times}
+\subsection{Single-Image Inference}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%% cap6: Conclusions %%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Conclusions and Future Work}\label{chap:conclusions}
+
+\section{Summary of Contributions}\label{sec:summary}
+
+\section{Limitations}\label{sec:limitations}
+\subsection{Adversarial Robustness}
+\subsection{Cross-Generator Transferability}
+\subsection{Domain Bias}
+
+\section{Future Directions}\label{sec:future}
+\subsection{Continual Learning for Novel Generators}
+\subsection{Adversarial Training and Input Purification}
+\subsection{C2PA-First Provenance Filtering}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%% Bibliography %%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% \bibliography{mybib}
+% \bibliographystyle{alpha}
+% \addcontentsline{toc}{chapter}{Bibliography}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%% Appendices %%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% \appendix
+% \chapter{Full Cross-Generator Results}\label{app:crossgen}
+% \chapter{Calibration Detailed Results}\label{app:calibration}
+% \chapter{Grad-CAM Visualization Examples}\label{app:gradcam}
+% \chapter{Desktop Application Screenshots}\label{app:desktop}
+% \chapter{Generative AI Tools Usage}\label{genAIUsage}

@@ -1,0 +1,13 @@
+\begin{table*}[t]
+\centering
+\caption{Main comparison of meta-classifier architectures on the ImageTrust test set. We report mean $\pm$ std across 3 seeds, with 95\% bootstrap CIs in parentheses. Best results in \textbf{bold}.}
+\label{tab:main_comparison}
+\begin{tabular}{l cccc cc}
+\toprule
+Method & Accuracy & F1 & ROC-AUC & MCC & ECE$\downarrow$ & Brier$\downarrow$ \\
+\midrule
+Xgboost & $0.886 \pm 0.001$ & $0.858 \pm 0.001$ & $0.959 \pm 0.001$ & $0.766 \pm 0.002$ & $0.016 \pm 0.003$ & $0.079 \pm 0.001$ \\
+Mlp & $0.890 \pm 0.001$ & $0.865 \pm 0.002$ & $0.963 \pm 0.000$ & $0.773 \pm 0.001$ & $0.036 \pm 0.004$ & $0.076 \pm 0.000$ \\
+\bottomrule
+\end{tabular}
+\end{table*}

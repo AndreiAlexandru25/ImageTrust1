@@ -1,0 +1,23 @@
+\begin{table}[t]
+\centering
+\caption{Per-variant performance analysis. Models are evaluated separately on each distribution variant to assess robustness to social media transformations.}
+\label{tab:variant_analysis}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{l l cccc}
+\toprule
+Model & Variant & Accuracy & F1 & AUC & ECE$\downarrow$ \\
+\midrule
+Xgboost & overall & $0.887$ & $0.859$ & $0.960$ & $0.021$ \\
+ & instagram & $0.888$ & $0.860$ & $0.961$ & $0.022$ \\
+ & original & $0.887$ & $0.859$ & $0.961$ & $0.025$ \\
+ & screenshot & $0.888$ & $0.860$ & $0.960$ & $0.019$ \\
+ & whatsapp & $0.886$ & $0.858$ & $0.958$ & $0.020$ \\
+\midrule
+Mlp & overall & $0.891$ & $0.868$ & $0.963$ & $0.039$ \\
+ & instagram & $0.892$ & $0.869$ & $0.964$ & $0.038$ \\
+ & original & $0.892$ & $0.868$ & $0.964$ & $0.036$ \\
+ & screenshot & $0.890$ & $0.867$ & $0.963$ & $0.041$ \\
+ & whatsapp & $0.890$ & $0.867$ & $0.961$ & $0.042$ \\
+\bottomrule
+\end{tabular}}
+\end{table}

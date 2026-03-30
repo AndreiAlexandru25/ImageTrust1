@@ -1,0 +1,21 @@
+{
+  "xgboost_vs_mlp": {
+    "mcnemar": {
+      "statistic": 20.756739130434784,
+      "p_value": 5.214774209894024e-06,
+      "b_a_right_b_wrong": 2145,
+      "c_a_wrong_b_right": 2455,
+      "significant_0.05": true,
+      "significant_0.01": true
+    },
+    "delong": {
+      "auc_a": 0.9600545942566943,
+      "auc_b": 0.9630441444715498,
+      "difference": -0.0029895502148555853,
+      "z_stat": -5.9266749117700914e-05,
+      "p_value": 0.9999527119759377,
+      "significant_0.05": false,
+      "significant_0.01": false
+    }
+  }
+}

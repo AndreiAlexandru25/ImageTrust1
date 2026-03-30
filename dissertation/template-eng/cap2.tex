@@ -1,0 +1,162 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%% Chapter 2: Related Work %%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Related Work}\label{chap:related}
+
+This chapter reviews existing work in AI-generated image detection, covering the evolution of generative models, detection approaches proposed in the literature, ensemble and multi-model strategies, calibration and uncertainty quantification methods, and the benchmark datasets used for evaluation.
+
+
+\section{Evolution of Generative Models}\label{sec:gen-models}
+
+Generative models have transitioned from adversarial to diffusion-based and now autoregressive frameworks. In this field, detection models must overcome many nuanced problems, most of those overlapping, including dataset shift resulting from generator variability, unintentional degradation of performance through post-processing techniques, and others.
+
+\subsection{Generative Adversarial Networks (GANs)}\label{sec:gans}
+
+Generative Adversarial Networks, introduced by Goodfellow et al. \cite{goodfellow2014generative}, established the first major paradigm for high-fidelity image synthesis. A GAN consists of two neural networks --- a generator and a discriminator --- trained in an adversarial setting: the generator learns to produce images that are indistinguishable from real data, while the discriminator learns to tell them apart. This minimax game leads to increasingly realistic outputs.
+
+Since their introduction, GANs have evolved through several architectures of increasing capability. Progressive GAN \cite{karras2018celeba} introduced progressive growing of both generator and discriminator to stabilize training and produce high-resolution outputs. StyleGAN \cite{karras2019ffhq} introduced a style-based generator architecture that enables control over both coarse and fine image features, while StyleGAN2-ADA \cite{karras2020metfaces} addressed training with limited data through adaptive discriminator augmentation. Other notable GAN variants include BigGAN \cite{brock2019biggan} for large-scale class-conditional synthesis, CycleGAN \cite{zhu2017cyclegan} for unpaired image-to-image translation, and StarGAN v2 \cite{choi2020starganv2} for multi-domain image synthesis.
+
+Each of these architectures leaves distinct forensic traces in its generated images. However, the diversity of GAN architectures means that detectors trained on one family of GANs may not generalize to others, a problem that intensifies when considering non-GAN generators.
+
+
+\subsection{Diffusion-Based Models}\label{sec:diffusion}
+
+Diffusion models represent a fundamentally different approach to image generation. Denoising Diffusion Probabilistic Models (DDPMs), introduced by Ho et al. \cite{ho2020ddpm}, learn to reverse a gradual noising process, generating images by iteratively denoising random noise. While initially slower than GANs, subsequent work significantly improved both quality and speed.
+
+Rombach et al. \cite{rombach2022high} proposed Latent Diffusion Models, which perform the diffusion process in a compressed latent space rather than pixel space, dramatically reducing computational cost while maintaining high image quality. This approach was popularized as Stable Diffusion. GLIDE \cite{nichol2022glide} demonstrated text-guided diffusion for photorealistic image generation and editing. Palette \cite{saharia2022palette} applied diffusion to image-to-image translation tasks. Hybrid approaches such as Denoising Diffusion GANs \cite{xiao2022ddgan} combine the strengths of both paradigms.
+
+The shift from GAN-based to diffusion-based generation has created significant challenges for detectors, as the artifacts left by diffusion models are fundamentally different from those left by GANs. Corvi et al. \cite{corvi2023detection} observed inconsistent detection performance when training on data produced by adversarial generators and testing on diffusion generations, highlighting the need for detection approaches that are robust across generator families.
+
+
+\subsection{Autoregressive Frameworks}\label{sec:autoregressive}
+
+More recently, autoregressive transformers have emerged as a third paradigm for image generation, applying the token-prediction approach that succeeded in natural language processing to visual tokens. These models introduce yet another class of artifacts, further complicating the detection landscape.
+
+Since the generative landscape shifts faster than datasets can be curated, this is one of the reasons that we aimed for a zero-shot cross-generator evaluation (Section \ref{sec:cross-gen-eval}).
+
+
+\section{Existing Detection Approaches}\label{sec:detection-approaches}
+
+One of the most common paradigms in the field of AI-generated image detection is to train a single deep network in a supervised setting. This section reviews the most relevant approaches.
+
+
+\subsection{Wang et al. --- CNN-Generated Images Are Surprisingly Easy to Spot}\label{sec:wang}
+
+Wang et al. \cite{wang2020cnn} trained a ResNet-50 classifier on ProGAN-generated images and performed image transformations during training, such as blur and JPEG compression. Although this improved the transfer to several GANs, the detector's features remained linked to ProGAN's artifacts. When evaluated on our multi-source, multi-generator test set, this detector achieves only 68.6\% AUC and 13.4\% F1 (Table \ref{tab:main}), with a recall of just 7.5\%, meaning it classifies nearly all images as real. This demonstrates that a detector trained on a single GAN architecture does not generalize well to diverse, multi-generator data.
+
+
+\subsection{Gragnaniello et al. --- Low-Level Artifact Preservation}\label{sec:gragnaniello}
+
+Gragnaniello et al. \cite{gragnaniello2021gan} proposed an augmentation method that penalizes discriminator networks if they fail to preserve low-level artifacts between real and generated images. By explicitly encouraging the network to attend to fine-grained forensic traces rather than high-level semantic content, the approach aims to improve generalization across different generator architectures. However, this method is still fundamentally limited by the specific artifacts present in the training data.
+
+
+\subsection{Ojha et al. --- Frozen CLIP Zero-Shot Transfer}\label{sec:ojha}
+
+Ojha et al. \cite{ojha2023towards} used frozen CLIP (Contrastive Language-Image Pre-Training) image representations to perform zero-shot transfer from GANs to Stable Diffusion generations. By training only a linear classification layer on top of fixed CLIP ViT-L/14 features, the method achieves better generalization than supervised approaches. On our test dataset, Ojha et al. obtain 78.7\% AUC and 55.4\% F1, significantly outperforming Wang et al. by +10.1\% AUC, with recall improving from 7.5\% to 46.5\%.
+
+Nonetheless, Ojha still falls short compared to any of our internal baselines: B1 (LogReg) produces +15.2\% AUC and +28.5\% F1, while the MLP meta-classifier achieves +17.6\% AUC and +31.4\% F1. The calibration is also poor (ECE = 0.206) relative to our methods (0.016--0.039), most likely due to the limitations of a single linear probe over frozen features. Furthermore, Ojha degrades by $-$3.3\% AUC under compression \cite{ojha2023towards}, while our approach degrades by at most $-$0.3\% ($\times$10 better).
+
+
+\subsection{Corvi et al. --- GAN-to-Diffusion Detection Gap}\label{sec:corvi}
+
+Corvi et al. \cite{corvi2023detection} observed inconsistent detection performance when training on data produced by adversarial generators and testing on diffusion generations. This GAN-to-diffusion challenge represents one of the fundamental problems in the field: detectors tend to learn generator-specific artifacts rather than general properties of synthetic images, leading to significant performance drops when encountering images from unseen generator families.
+
+
+\subsection{Cozzolino et al. --- Fine-Tuned CLIP Representations}\label{sec:cozzolino}
+
+Cozzolino et al. \cite{cozzolino2024raising} proposed fine-tuning CLIP image representations rather than using them frozen. While this approach can improve within-family detection, it makes detection across similar families of models more difficult, as the fine-tuned features become specialized to the generators seen during training. This highlights the tension between specialization (higher accuracy on known generators) and generalization (better performance on unseen generators).
+
+
+\subsection{AEROBLADE --- Training-Free Detection}\label{sec:aeroblade}
+
+Ricker et al. \cite{ricker2024aeroblade} present AEROBLADE, the first training-free detection method robust to images produced by latent generators. By measuring autoencoder reconstruction error, AEROBLADE can detect synthetic images without requiring any training data. This approach is particularly interesting because it sidesteps the generalization problem entirely, though it is limited to latent diffusion models that use a specific autoencoder architecture.
+
+
+\section{Multi-Model and Ensemble Detection}\label{sec:ensemble}
+
+The idea of combining multiple models for improved detection has been explored by several authors. Mandelli et al. \cite{mandelli2022detecting} trained multiple CNN models that each optimize orthogonal objectives, but they do not analyze ensemble decisions together or provide a unified confidence score. This highlights a gap in the literature: while ensemble methods can improve detection accuracy, they typically do not address the calibration or uncertainty quantification aspects that are critical for practical deployment.
+
+ImageTrust differs from these approaches by not ensembling detection outputs, but rather fusing backbone \textit{embeddings} before classification. This allows the meta-classifier to learn complementary patterns across backbone representations, rather than simply averaging or voting on independent predictions. The concatenation of CNNs (ResNet-50, EfficientNet-B0) which utilize convolutional layers to extract local texture with a Transformer (ViT-B/16) that uses self-attention to reason about global image context provides a more diverse feature representation than ensembling multiple models of the same architecture.
+
+
+\section{Calibration and Uncertainty in Deep Learning}\label{sec:calib-related}
+
+\subsection{Miscalibration of Neural Networks}\label{sec:miscalibration}
+
+Guo et al. \cite{guo2017calibration} proved that modern deep neural networks are miscalibrated, tending toward overconfident predictions. That is, the predicted probability of a class does not reflect the true likelihood of correctness. This is particularly problematic in forensic applications where the confidence score directly influences downstream decisions (e.g., whether to flag an image for manual review).
+
+Temperature scaling, proposed as a simple post-hoc calibration method by Guo et al., modifies the softmax (or sigmoid) output by dividing the logits by a learned scalar temperature $T > 0$:
+\begin{equation}
+\hat{q} = \sigma(z/T),
+\end{equation}
+where $z$ is the single output logit, $\sigma$ denotes the sigmoid function, and $\hat{q}$ is the calibrated probability. When $T > 1$, the model becomes less confident (predictions move toward 0.5); when $T < 1$, the model becomes more confident.
+
+Calibration quality is measured by the Expected Calibration Error (ECE):
+\begin{equation}
+\text{ECE} = \sum_{m=1}^{M} \frac{|B_m|}{n} \bigl|\text{acc}(B_m) - \text{conf}(B_m)\bigr|,
+\label{eq:ece}
+\end{equation}
+where $M$ is the number of equal-width probability bins ($M{=}15$ in our experiments), $B_m$ is the set of samples whose predicted probability falls in bin $m$, $|B_m|$ is the number of samples in bin $m$, $n$ is the total number of test samples, $\text{acc}(B_m)$ is the accuracy in bin $m$, and $\text{conf}(B_m)$ is the average confidence in bin $m$.
+
+In addition to temperature scaling, we also considered Platt scaling (fitting a logistic regression on top of the logits) and isotonic regression (fitting a non-parametric monotonic function to map predicted probabilities to calibrated ones).
+
+
+\subsection{Conformal Prediction}\label{sec:conformal-related}
+
+Conformal prediction is a framework for constructing prediction sets $\mathcal{C}(\mathbf{x})$ with guaranteed coverage:
+\begin{equation}
+P(y \in \mathcal{C}(\mathbf{x})) \geq 1 - \alpha,
+\end{equation}
+where $\mathcal{C}(\mathbf{x})$ is the set of plausible labels for input $\mathbf{x}$, $y$ is the true label, and $\alpha$ is the desired miscoverage rate.
+
+Romano et al. \cite{romano2020classification} presented APS (Adaptive Prediction Sets), which constructs prediction sets by accumulating classes in decreasing order of predicted probability until the cumulative probability exceeds a calibrated threshold. Angelopoulos et al. \cite{angelopoulos2021uncertainty} subsequently extended APS to RAPS (Regularized APS), which adds a regularization penalty to reduce the average prediction set size.
+
+In our work, we also evaluate LAC (Least Ambiguous set-valued Classifiers), which uses a fixed threshold on the calibrated probability to construct prediction sets. If $|\mathcal{C}(\mathbf{x})| = 2$ (i.e., both classes are plausible), then the input is classified as \textsc{Uncertain}. We use $\alpha{=}0.05$, corresponding to a 95\% target coverage rate.
+
+To our knowledge, no prior AI-generated image detector combines calibrated confidence scores with conformal prediction guarantees. ImageTrust aims to address this gap.
+
+
+\section{Benchmark Datasets}\label{sec:datasets-related}
+
+The rapid evolution of generative models necessitates large-scale, diverse benchmark datasets for evaluating detection methods. This section reviews the most relevant benchmarks.
+
+\subsection{GenImage}\label{sec:genimage}
+
+GenImage \cite{zhu2024genimage} aggregates more than 1 million images across 24 generator architectures, spanning GANs (12 architectures), diffusion models (8 architectures), inpainting methods (3 methods), and other approaches. It also includes real images from 9 sources (ImageNet \cite{deng2009imagenet}, COCO \cite{lin2014coco}, FFHQ \cite{karras2019ffhq}, CelebA-HQ \cite{karras2018celeba}, MetFaces \cite{karras2020metfaces}, AFHQ, Landscape, LSUN, SFHQ \cite{david2022sfhq}). We use GenImage as our cross-generator evaluation benchmark, testing on 156,550 images that were not seen during training.
+
+\subsection{CIFAKE}\label{sec:cifake}
+
+CIFAKE \cite{bird2024cifake} creates pairs of photographs and Stable Diffusion v1.4 class-conditional generations from CIFAR-10 \cite{krizhevsky2009learning} categories, providing a controlled setting for evaluating detection on diffusion-generated images. CIFAKE is included in our training dataset (50,000 images: 5,312 AI-generated and 7,632 real after subsampling).
+
+\subsection{DiffusionDB}\label{sec:diffusiondb}
+
+DiffusionDB \cite{wang2023diffusiondb} contains 14 million Stable Diffusion generations paired with their text prompts, representing the largest collection of diffusion-generated images. While we do not use DiffusionDB directly in our experiments, it illustrates the scale at which generative models operate and the corresponding challenge for detection systems.
+
+
+\section{Positioning of ImageTrust}\label{sec:positioning}
+
+Table \ref{tab:positioning} summarizes the key features of ImageTrust compared to representative methods from the literature.
+
+\begin{table}[htbp]
+     \centering
+     \caption{Feature comparison with representative methods. {\checkmark}\,=\,supported, {\texttimes}\,=\,not supported, $\sim$\,=\,partial.}
+     \label{tab:positioning}
+     \setlength{\tabcolsep}{4pt}
+     \small
+     \begin{tabular}{@{}lccccc@{}}
+     \toprule
+     \textbf{Method} & \textbf{Multi-backbone} & \textbf{Meta-clf} & \textbf{Calibration} & \textbf{Conformal} & \textbf{Cross-gen} \\
+     \midrule
+     Wang et al. \cite{wang2020cnn}       & \texttimes & \texttimes & \texttimes & \texttimes & $\sim$     \\
+     Ojha et al. \cite{ojha2023towards}   & \texttimes & \texttimes & \texttimes & \texttimes & \checkmark \\
+     Corvi et al. \cite{corvi2023detection} & $\sim$   & \texttimes & \texttimes & \texttimes & \checkmark \\
+     AEROBLADE \cite{ricker2024aeroblade}  & \texttimes & \texttimes & \texttimes & \texttimes & \checkmark \\
+     Mandelli et al. \cite{mandelli2022detecting} & $\sim$ & \texttimes & \texttimes & \texttimes & \texttimes \\
+     \midrule
+     \textbf{ImageTrust (ours)}            & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+     \bottomrule
+     \end{tabular}
+\end{table}
+
+ImageTrust is, to our knowledge, the first AI-generated image detector that combines multi-backbone embedding fusion, meta-classification, post-hoc probability calibration, and conformal prediction with explicit abstention, while being evaluated on a comprehensive cross-generator benchmark.

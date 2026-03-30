@@ -1,0 +1,42 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% Week 4-5: Methodology %%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Methodology}\label{chap:methodology}
+
+% STATUS: Week 4-5 (TODO)
+% Content source: author.tex Section 3 (Methodology), expanded with more detail.
+
+\section{Heterogeneous Backbone Fusion}\label{sec:fusion}
+% Week 4
+% Different backbones encode complementary information:
+%   CNNs (ResNet-50, EfficientNet-B0) -> local texture
+%   Transformers (ViT-B/16) -> global context via self-attention
+% Equation: e_k = B_k(x), f = [e_1 || e_2 || e_3] in R^4096
+% Architecture diagram (TikZ from author.tex)
+\textit{To be completed in Week 4.}
+
+\section{Meta-Classifiers}\label{sec:meta_classifiers}
+% Week 4
+% XGBoost: 1000 rounds, depth 8, lr 0.05, L1/L2, GPU, early stopping patience 50
+% MLP: 4096->1024->512->256->1, dropout, label smoothing, mixup, SWA, AdamW, patience 15
+% Seeds: 42, 123, 7; bootstrap 95% CI (n=1000)
+\textit{To be completed in Week 4.}
+
+\section{Temperature Scaling Calibration}\label{sec:temp_scaling}
+% Week 5
+% State-of-the-art classifiers are miscalibrated (overconfident)
+% Temperature scaling: q_hat = sigma(z/T) where T>0 is learned
+% Optimised with L-BFGS: T_XGB = 0.81, T_MLP = 1.54
+% Also: Platt scaling, isotonic regression
+% ECE formula: sum_{m=1}^{M} |B_m|/n |acc(B_m) - conf(B_m)|, M=15 bins
+\textit{To be completed in Week 5.}
+
+\section{Conformal Prediction}\label{sec:conformal}
+% Week 5
+% Prediction sets C(x) such that P(y in C(x)) >= 1 - alpha
+% alpha = 0.05 (95% coverage target)
+% Three methods: LAC, APS, RAPS
+% If |C(x)| = 2 -> UNCERTAIN label (both classes plausible)
+% LAC chosen: threshold = 0.7652, coverage = 95.19%, abstention = 9.3%
+\textit{To be completed in Week 5.}

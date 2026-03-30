@@ -1,0 +1,79 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%% Chapter 1: Introduction %%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Introduction}\label{chap:intro}
+
+\section{Motivation and Problem Statement}\label{sec:motivation}
+
+The rapid development and public availability of generative models has created an unprecedented challenge for digital media authenticity. From Generative Adversarial Networks (GANs) \cite{goodfellow2014generative} to latent diffusion models \cite{rombach2022high} and autoregressive transformers, the gap between image generation and detection continues to widen, with important implications for forensics, journalism, and law.
+
+Most AI-generated image detectors have been shown to perform poorly under recompression, i.e., when images are saved again as they would be on social media platforms. For example, detectors trained on GAN-generated images often degrade significantly when evaluated on diffusion-based outputs \cite{corvi2023detection}. In addition, these methods typically do not provide calibrated uncertainty estimates alongside their predictions, meaning that a reported confidence of 90\% does not correspond to a 90\% true positive rate.
+
+This thesis addresses these limitations by proposing \textit{ImageTrust}, a detection framework that combines multi-backbone feature fusion with calibrated uncertainty quantification, targeting three key shortcomings of prior work: (1) degradation under social-media recompression, (2) absence of calibrated confidence scores, and (3) lack of principled abstention mechanisms when the model is uncertain.
+
+
+\section{Research Objectives}\label{sec:objectives}
+
+The primary research objectives of this thesis are:
+
+\begin{enumerate}
+    \item \textbf{Design a compression-robust detection pipeline} that maintains high detection performance even after images undergo social-media compression pipelines (WhatsApp, Instagram, screenshot capture).
+
+    \item \textbf{Provide calibrated uncertainty estimates} by combining temperature scaling, which reduces the Expected Calibration Error (ECE), with conformal prediction \cite{vovk2005algorithmic} to deliver statistical coverage guarantees.
+
+    \item \textbf{Enable principled abstention} through conformal prediction sets, so that when the model is insufficiently confident, it explicitly outputs an \textsc{Uncertain} label rather than a potentially misleading classification.
+
+    \item \textbf{Conduct a comprehensive evaluation} benchmarking ImageTrust against multiple baselines (both internal and from the literature) on the same dataset, using the same metrics, the same splits, and the same evaluation protocol.
+
+    \item \textbf{Assess cross-generator generalization} by evaluating on 24 unseen generator architectures from the GenImage benchmark \cite{zhu2024genimage} to understand the limits of zero-shot transferability.
+
+    \item \textbf{Deliver a deployable forensic application} as a distributable Windows desktop application with offline analysis capabilities, forensic reporting, and explainability features.
+\end{enumerate}
+
+
+\section{Main Contributions}\label{sec:contributions}
+
+The main contributions of this thesis are as follows:
+
+\subsection{Calibrated Uncertainty Quantification}\label{sec:contrib-calibration}
+
+To the best of our knowledge, no prior AI-generated image detector combines calibrated confidence scores with conformal prediction guarantees. ImageTrust addresses this gap by applying temperature scaling to reduce ECE and layering conformal prediction on top to provide coverage guarantees with abstention. Specifically, we employ temperature scaling ($T_{\text{XGB}} = 0.81$, $T_{\text{MLP}} = 1.54$) optimized via L-BFGS, achieving an ECE of 0.016 for the XGBoost meta-classifier. We evaluate three conformal prediction approaches --- LAC (Least Ambiguous set-valued Classifiers), APS (Adaptive Prediction Sets) \cite{romano2020classification}, and RAPS (Regularized APS) \cite{angelopoulos2021uncertainty} --- and find that only LAC provides a reasonable trade-off: 95.2\% coverage with 9.3\% abstention rate using XGBoost. When the conformal prediction set contains both classes (i.e., $|\mathcal{C}(\mathbf{x})| = 2$), the input is classified as \textsc{Uncertain}, providing an explicit signal that the model cannot make a confident decision.
+
+
+\subsection{Compression-Robust Multi-Backbone Fusion}\label{sec:contrib-fusion}
+
+ImageTrust fuses representations from three heterogeneous backbones, all pre-trained on ImageNet: ResNet-50 \cite{he2016deep} (2,048-d), EfficientNet-B0 \cite{tan2019efficientnet} (1,280-d), and ViT-B/16 \cite{dosovitskiy2021image} (768-d). The penultimate-layer activations are concatenated into a single 4,096-dimensional vector $\mathbf{f} = [\mathbf{e}_1 \,\|\, \mathbf{e}_2 \,\|\, \mathbf{e}_3] \in \mathbb{R}^{4096}$, which is then classified using two meta-classifiers: XGBoost \cite{chen2016xgboost} and a four-layer MLP ($4096 \to 1024 \to 512 \to 256 \to 1$) \cite{rumelhart1986learning}.
+
+Training on a dataset of 604,589 images across four compression variants (original, WhatsApp, Instagram, screenshot) results in less than 0.3\% AUC degradation under social-media compression, compared to degradations of 3--8\% observed in prior detectors such as Wang et al. \cite{wang2020cnn} and Ojha et al. \cite{ojha2023towards}. While the fusion approach does not increase absolute AUC over the best single-backbone baseline (96.3 vs 96.4), it provides compression robustness and calibrated uncertainty estimates that single-backbone models lack.
+
+
+\subsection{Comprehensive Evaluation Protocol}\label{sec:contrib-evaluation}
+
+We benchmark ImageTrust against six baselines (four internal and two from the literature) on 604,589 images, four compression variants, 24 unseen generators, and an ablation study. All baselines use the same embeddings on the same train/validation/test splits and differ only in classifier architecture:
+
+\begin{itemize}
+    \item \textbf{External baselines:} Wang et al. \cite{wang2020cnn} (ResNet-50 trained on ProGAN with blur and JPEG augmentation) and Ojha et al. \cite{ojha2023towards} (frozen CLIP ViT-L/14 with trained linear layer).
+    \item \textbf{B1 --- Classical:} Logistic Regression + ResNet-50 embeddings.
+    \item \textbf{B2 --- Single-backbone CNN:} XGBoost + ResNet-50 or EfficientNet-B0 embeddings.
+    \item \textbf{B3 --- Transformer:} XGBoost + ViT-B/16 embeddings.
+\end{itemize}
+
+Evaluation metrics include Accuracy, Precision, Recall, F1, ROC-AUC, ECE ($M{=}15$ bins), bootstrap 95\% confidence intervals ($n{=}1{,}000$ resamples), McNemar's test (paired comparison of classifier error rates), and DeLong's test (comparison of two AUC values). All experiments use fixed seeds (42, 123, 7) for full reproducibility.
+
+
+\section{Thesis Structure}\label{sec:structure}
+
+The remainder of this thesis is organized as follows:
+
+\begin{itemize}
+    \item \textbf{Chapter \ref{chap:related} --- Related Work} reviews the evolution of generative models, existing detection approaches, multi-model ensembles, calibration methods, conformal prediction, and relevant benchmark datasets.
+
+    \item \textbf{Chapter \ref{chap:methodology} --- Methodology} describes the ImageTrust architecture in detail: the two-phase pipeline consisting of heterogeneous backbone fusion (Phase 1) and meta-classification with calibration and conformal prediction (Phase 2), as well as the end-to-end forensic system.
+
+    \item \textbf{Chapter \ref{chap:setup} --- Experimental Setup} presents the hardware configuration, dataset construction (1,071,376 unique images from 12 sources with 4 compression variants), data splits, evaluation metrics, baseline definitions, and reproducibility protocol.
+
+    \item \textbf{Chapter \ref{chap:results} --- Results and Discussion} reports the main comparison (in-domain detection on 90,692 test images), degradation robustness analysis, cross-generator generalization on the GenImage benchmark (156,550 images, 24 generators), ablation study, calibration analysis, conformal prediction results, and efficiency measurements.
+
+    \item \textbf{Chapter \ref{chap:conclusions} --- Conclusions and Future Work} summarizes the contributions, discusses limitations (adversarial robustness, cross-generator transferability, domain bias), and outlines future directions including continual learning, adversarial training, and C2PA provenance filtering.
+\end{itemize}

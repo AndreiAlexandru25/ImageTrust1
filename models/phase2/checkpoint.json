@@ -1,0 +1,12 @@
+{
+  "last_completed_stage": 10,
+  "last_stage_name": "latex_tables",
+  "timestamp": "2026-02-19T12:22:13.226183",
+  "completed_stages": [
+    "xgboost",
+    "mlp",
+    "temperature_scaling",
+    "variant_evaluation",
+    "significance_tests"
+  ]
+}
